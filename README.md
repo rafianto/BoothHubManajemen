@@ -9,3 +9,7 @@ menerima job untuk implementasi dan pengembangan solusi bisnis dengan menggunaka
 <img width="1600" height="581" alt="WhatsApp Image 2026-06-03 at 09 57 48" src="https://github.com/user-attachments/assets/1d9d05eb-0f5e-44cc-98ec-4aecb4a5ecf1" />
 
 <img width="1843" height="813" alt="image" src="https://github.com/user-attachments/assets/d2ea0014-e377-4004-b49e-11e356500514" />
+
+Penjualan :
+<img width="1600" height="563" alt="WhatsApp Image 2026-06-03 at 19 12 04" src="https://github.com/user-attachments/assets/8ca06796-8f92-449b-b752-01b58b5d8334" />
+
