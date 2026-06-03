@@ -1,6 +1,6 @@
-Mengelola beberapa booth F&B itu kompleks, dan tanpa sistem terintegrasi, banyak yang bisa lolos dari pengawasan. 
-aplikasi web manajemen booth yang lengkap dengan dashboard informatif, manajemen karyawan, tracking stok bahan baku (dengan alert yang kurang), 
-pencatatan penjualan harian, dan pengelolaan berkesinambungan. dan analisa cashflow manajemen stok
+Mengelola beberapa booth F&B itu kompleks, dan tanpa sistem terintegrasi, banyak yang bisa lolos dari pengawasan. aplikasi web manajemen booth yang lengkap dengan dashboard informatif, manajemen karyawan, tracking stok bahan baku (dengan alert yang kurang), pencatatan penjualan harian, dan pengelolaan berkesinambungan. dan analisa cashflow manajemen stok.
+
+menerima job untuk implementasi dan pengembangan solusi bisnis dengan menggunakan manajemen aplikasi yang terintegrasi, contact WA +62-088-8800-7288
 
 <img width="1600" height="661" alt="WhatsApp Image 2026-06-03 at 09 09 31" src="https://github.com/user-attachments/assets/aec7c777-02a0-4836-8f5c-ac92a95ddb16" />
 
