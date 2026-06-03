@@ -1,0 +1,162 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_dashboard %}active{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Ringkasan operasional booth Anda{% endblock %}
+
+{% block content %}
+<!-- Alert Stok Rendah -->
+{% if low_stock_count > 0 %}
+<div class="alert-strip danger"><i class="fas fa-exclamation-circle"></i> <strong>{{ low_stock_count }} bahan</strong> mencapai batas minimum stok — perlu segera di-restock!</div>
+{% endif %}
+
+<!-- KPI Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="kpi-card orange">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Pendapatan Hari Ini</div>
+                <div class="kpi-value" style="color:var(--accent);">{{ today_revenue_fmt }}</div>
+                <div style="font-size:12px;color:{% if revenue_change >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+                    <i class="fas fa-arrow-{% if revenue_change >= 0 %}up{% else %}down{% endif %}"></i> {{ revenue_change|floatformat:1 }}% dari kemarin
+                </div>
+            </div>
+            <div class="kpi-icon" style="background:var(--accent-light);color:var(--accent);"><i class="fas fa-wallet"></i></div>
+        </div>
+    </div>
+    <div class="kpi-card cyan">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Transaksi Hari Ini</div>
+                <div class="kpi-value" style="color:var(--info);">{{ today_tx }}</div>
+                <div style="font-size:12px;color:var(--muted);">Rata-rata {{ avg_per_tx_fmt }}/transaksi</div>
+            </div>
+            <div class="kpi-icon" style="background:#CFFAFE;color:var(--info);"><i class="fas fa-receipt"></i></div>
+        </div>
+    </div>
+    <div class="kpi-card green">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Booth Aktif</div>
+                <div class="kpi-value" style="color:var(--success);">{{ active_booths }}</div>
+                <div style="font-size:12px;color:var(--muted);">dari {{ total_booths }} total booth</div>
+            </div>
+            <div class="kpi-icon" style="background:#DCFCE7;color:var(--success);"><i class="fas fa-store-alt"></i></div>
+        </div>
+    </div>
+    <div class="kpi-card red">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Stok Rendah</div>
+                <div class="kpi-value" style="color:var(--danger);">{{ low_stock_count }}</div>
+                <div style="font-size:12px;color:var(--muted);">{{ active_employees }} karyawan aktif</div>
+            </div>
+            <div class="kpi-icon" style="background:#FEE2E2;color:var(--danger);"><i class="fas fa-triangle-exclamation"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;">
+    <div class="card">
+        <div class="card-header">Pendapatan 7 Hari Terakhir</div>
+        <div style="padding:20px;"><div style="height:280px;"><canvas id="revenueChart"></canvas></div></div>
+    </div>
+    <div class="card">
+        <div class="card-header">Penjualan per Booth (Hari Ini)</div>
+        <div style="padding:20px;"><div style="height:280px;"><canvas id="boothPieChart"></canvas></div></div>
+    </div>
+</div>
+
+<!-- Bottom Row -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="card">
+        <div class="card-header">
+            Bahan Stok Rendah
+            <a href="{% url 'boothapp:inventory_list' %}" style="font-size:12px;color:var(--accent);font-weight:600;text-decoration:none;">Lihat Semua <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <table class="data-table">
+            <thead><tr><th>Bahan</th><th>Booth</th><th>Stok</th><th>Min</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for item in low_stock_items %}
+                <tr>
+                    <td style="font-weight:600;">{{ item.name }}</td>
+                    <td>{{ item.booth.name }}</td>
+                    <td><span style="color:{% if item.is_critical %}var(--danger){% else %}var(--warning){% endif %};font-weight:700;">{{ item.stock }}</span> {{ item.unit }}</td>
+                    <td>{{ item.min_stock }} {{ item.unit }}</td>
+                    <td><span class="badge {% if item.is_critical %}badge-danger{% else %}badge-warning{% endif %}">{% if item.is_critical %}Kritis{% else %}Rendah{% endif %}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Semua stok aman</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">Performa Booth Hari Ini</div>
+        <div style="padding:16px;">
+            {% for booth in booth_revenues %}
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">
+                <div style="width:40px;height:40px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                    <i class="fas {{ booth.icon }}" style="color:var(--accent);font-size:16px;"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-weight:700;font-size:14px;">{{ booth.name }}</div>
+                    <div style="font-size:12px;color:var(--muted);">{{ booth.location }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:800;font-size:15px;">{{ booth.today_rev_fmt }}</div>
+                    <div style="font-size:11px;color:var(--muted);">{{ booth.today_tx|default:"0" }} transaksi</div>
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align:center;padding:24px;color:var(--muted);">Tidak ada booth aktif</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.color = '#78716C';
+
+    const last7Data = {{ last7|safe }};
+    const ctx1 = document.getElementById('revenueChart').getContext('2d');
+    
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: last7Data.map(d => { const p = d.date.split('-'); return p[2] + '/' + p[1]; }),
+            datasets: [{ label: 'Pendapatan', data: last7Data.map(d => d.revenue), backgroundColor: 'rgba(227,100,20,0.8)', borderColor: '#E36414', borderWidth: 1, borderRadius: 6, barThickness: 32 }]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { 
+                legend: { display: false },
+                tooltip: { backgroundColor: '#1C1917', titleColor: '#F5F5F4', bodyColor: '#F5F5F4', padding: 12, cornerRadius: 8, callbacks: { label: (c) => 'Rp ' + c.parsed.y.toLocaleString('id-ID') } }
+            }, 
+            scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1000) + 'k' }, grid: { color: '#F5F5F4' } }, x: { grid: { display: false } } } 
+        }
+    });
+
+    const boothLabels = [{% for b in booth_revenues %}'{{ b.name }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+    const boothValues = [{% for b in booth_revenues %}{{ b.today_rev|default:"0" }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    const boothColors = ['#E36414', '#0891B2', '#16A34A', '#9333EA', '#D97706', '#DB2777'];
+
+    const ctx2 = document.getElementById('boothPieChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: { labels: boothLabels, datasets: [{ data: boothValues, backgroundColor: boothColors.slice(0, boothLabels.length), borderWidth: 2, borderColor: '#fff', hoverOffset: 4 }] },
+        options: { 
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: { 
+                legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12, usePointStyle: true } },
+                tooltip: { backgroundColor: '#1C1917', titleColor: '#F5F5F4', bodyColor: '#F5F5F4', padding: 12, cornerRadius: 8, callbacks: { label: (c) => c.label + ': Rp ' + c.parsed.toLocaleString('id-ID') } }
+            }
+        }
+    });
+</script>
+{% endblock %}

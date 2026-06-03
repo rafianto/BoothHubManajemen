@@ -1,0 +1,145 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_menu %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Isi data menu dengan lengkap{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+    <!-- Back Button -->
+    <a href="{% url 'boothapp:menu_list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;transition:color 0.2s;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+        <i class="fas fa-arrow-left"></i> Kembali ke Daftar Menu
+    </a>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+        <!-- Form Card -->
+        <div class="card" style="grid-column:1/-1;">
+            <div class="card-header">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-utensils" style="color:var(--accent);font-size:15px;"></i>
+                    </div>
+                    <span>{{ title }}</span>
+                </div>
+            </div>
+            <div style="padding:24px;">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div style="padding:12px 16px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:13px;margin-bottom:20px;">
+                        <i class="fas fa-exclamation-circle"></i> Terdapat kesalahan dalam formulir. Periksa kembali isian Anda.
+                    </div>
+                    {% endif %}
+
+                    <!-- Nama Menu -->
+                    <div class="form-group">
+                        <label class="form-label" for="id_name">
+                            Nama Menu <span style="color:var(--danger);">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.name.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Contoh: Es Teh Manis, Ayam Goreng Krispi</div>
+                    </div>
+
+                    <!-- Booth & Kategori (2 kolom) -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="id_booth">
+                                Booth <span style="color:var(--danger);">*</span>
+                            </label>
+                            {{ form.booth }}
+                            {% if form.booth.errors %}
+                            <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.booth.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="id_category">
+                                Kategori <span style="color:var(--danger);">*</span>
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                            <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.category.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Harga -->
+                    <div class="form-group">
+                        <label class="form-label" for="id_price">
+                            Harga (Rp) <span style="color:var(--danger);">*</span>
+                        </label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700;font-size:14px;">Rp</span>
+                            {{ form.price }}
+                        </div>
+                        {% if form.price.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.price.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tersedia -->
+                    <div class="form-group">
+                        <label class="form-label">Ketersediaan</label>
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#FAFAF9;border-radius:8px;border:1px solid var(--border);">
+                            {{ form.is_available }}
+                            <label for="id_is_available" style="font-size:14px;font-weight:500;cursor:pointer;">
+                                Menu ini tersedia untuk dipesan
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--border);">
+                        <a href="{% url 'boothapp:menu_list' %}" class="btn btn-secondary" style="text-decoration:none;">Batal</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Styling Django form fields
+    document.querySelectorAll('input[type="text"], input[type="number"], select, textarea').forEach(el => {
+        if (!el.classList.contains('form-input') && !el.classList.contains('form-select')) {
+            el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-input');
+        }
+    });
+
+    // Harga input: tambah padding kiri untuk prefix "Rp"
+    const priceInput = document.getElementById('id_price');
+    if (priceInput) {
+        priceInput.style.paddingLeft = '36px';
+        priceInput.addEventListener('input', function() {
+            // Hapus karakter non-digit
+            this.value = this.value.replace(/[^\d]/g, '');
+        });
+    }
+
+    // Checkbox styling
+    const checkbox = document.getElementById('id_is_available');
+    if (checkbox) {
+        checkbox.style.width = '18px';
+        checkbox.style.height = '18px';
+        checkbox.style.accentColor = 'var(--accent)';
+        checkbox.style.cursor = 'pointer';
+    }
+
+    // Pre-select booth dari query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const boothParam = urlParams.get('booth');
+    if (boothParam) {
+        const boothSelect = document.getElementById('id_booth');
+        if (boothSelect) boothSelect.value = boothParam;
+    }
+</script>
+{% endblock %}

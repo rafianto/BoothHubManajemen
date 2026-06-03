@@ -1,0 +1,215 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_laporan %}active{% endblock %}
+{% block page_title %}Laporan Arus Kas{% endblock %}
+{% block page_subtitle %}Analisis aliran dana masuk dan keluar periode ini{% endblock %}
+
+{% block content %}
+<!-- Filter Tanggal -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:13px;font-weight:600;">Dari:</label>
+            <input type="date" class="form-input" style="width:auto;" id="startDate" value="{{ start_date }}" onchange="applyFilter()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:13px;font-weight:600;">Sampai:</label>
+            <input type="date" class="form-input" style="width:auto;" id="endDate" value="{{ end_date }}" onchange="applyFilter()">
+        </div>
+    </div>
+    <a href="{% url 'boothapp:report' %}" class="btn btn-secondary" style="text-decoration:none;">
+        <i class="fas fa-arrow-left"></i> Kembali ke Laporan Utama
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;">
+    <div class="kpi-card green">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Total Pemasukan (Inflow)</div>
+                <div class="kpi-value" style="color:var(--success);font-size:22px;">{{ total_inflow_fmt }}</div>
+            </div>
+            <div class="kpi-icon" style="background:#DCFCE7;color:var(--success);"><i class="fas fa-arrow-down"></i></div>
+        </div>
+    </div>
+    <div class="kpi-card red">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Total Pengeluaran (Outflow)</div>
+                <div class="kpi-value" style="color:var(--danger);font-size:22px;">{{ total_outflow_fmt }}</div>
+            </div>
+            <div class="kpi-icon" style="background:#FEE2E2;color:var(--danger);"><i class="fas fa-arrow-up"></i></div>
+        </div>
+    </div>
+    <div class="kpi-card orange">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Arus Kas Bersih (Net)</div>
+                <div class="kpi-value" style="color:var(--accent);font-size:22px;">{{ total_net_fmt }}</div>
+            </div>
+            <div class="kpi-icon" style="background:var(--accent-light);color:var(--accent);"><i class="fas fa-equals"></i></div>
+        </div>
+    </div>
+    <div class="kpi-card cyan">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+                <div class="kpi-label">Saldo Akhir Kumulatif</div>
+                <div class="kpi-value" style="color:var(--info);font-size:22px;">{{ cumulative_balance_fmt }}</div>
+            </div>
+            <div class="kpi-icon" style="background:#CFFAFE;color:var(--info);"><i class="fas fa-piggy-bank"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Arus Kas -->
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <span><i class="fas fa-chart-line" style="color:var(--accent);margin-right:8px;"></i>Grafik Arus Kas Harian</span>
+    </div>
+    <div style="padding:20px;">
+        <div style="height:350px;"><canvas id="cashflowChart"></canvas></div>
+    </div>
+</div>
+
+<!-- Tabel Detail Arus Kas -->
+<div class="card">
+    <div class="card-header">
+        <span><i class="fas fa-table" style="color:var(--accent);margin-right:8px;"></i>Detail Arus Kas Harian</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th style="text-align:right;">Pemasukan</th>
+                    <th style="text-align:right;">Pengeluaran</th>
+                    <th style="text-align:right;">Arus Kas Bersih</th>
+                    <th style="text-align:right;">Saldo Kumulatif</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in daily_data reversed %}
+                <tr style="{% if data.net < 0 %}background:#FFFBEB;{% endif %}">
+                    <td style="font-weight:700;font-size:13px;">{{ data.date|date:"d M Y" }}</td>
+                    <td style="text-align:right;color:var(--success);font-weight:600;">+ {{ data.inflow_fmt }}</td>
+                    <td style="text-align:right;color:var(--danger);font-weight:600;">- {{ data.outflow_fmt }}</td>
+                    <td style="text-align:right;font-weight:800;color:{% if data.net >= 0 %}var(--success){% else %}var(--danger){% endif %};">
+                        {{ data.net_fmt }}
+                    </td>
+                    <td style="text-align:right;font-weight:800;color:var(--info);">
+                        {{ data.cumulative_fmt }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Tidak ada data pada periode ini</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Ekstrak data dari Django ke JS
+    const dailyData = [
+        {% for data in daily_data %}
+        {
+            date: '{{ data.date|date:"d/m" }}',
+            inflow: {{ data.inflow }},
+            outflow: {{ data.outflow }},
+            net: {{ data.net }},
+            cumulative: {{ data.cumulative }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+    Chart.defaults.color = '#78716C';
+
+    const ctx = document.getElementById('cashflowChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dailyData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Pemasukan',
+                    data: dailyData.map(d => d.inflow),
+                    backgroundColor: 'rgba(22, 163, 74, 0.7)',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Pengeluaran',
+                    data: dailyData.map(d => -d.outflow), // Negatif agar batang ke bawah
+                    backgroundColor: 'rgba(220, 38, 38, 0.7)',
+                    borderRadius: 4,
+                    order: 2
+                },
+                {
+                    label: 'Saldo Kumulatif',
+                    data: dailyData.map(d => d.cumulative),
+                    type: 'line',
+                    borderColor: '#0891B2',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    order: 1,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } },
+                tooltip: {
+                    backgroundColor: '#1C1917',
+                    titleColor: '#F5F5F4',
+                    bodyColor: '#F5F5F4',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            label += 'Rp ' + Math.abs(context.parsed.y).toLocaleString('id-ID');
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    position: 'left',
+                    ticks: { callback: v => 'Rp ' + (Math.abs(v)/1000) + 'k' }, 
+                    grid: { color: '#F5F5F4' } 
+                },
+                y1: { 
+                    beginAtZero: false, 
+                    position: 'right', 
+                    grid: { drawOnChartArea: false }, 
+                    ticks: { callback: v => 'Rp ' + (v/1000) + 'k' } 
+                },
+                x: { grid: { display: false }, ticks: { maxRotation: 45, autoSkip: true, maxTicksLimit: 15 } }
+            }
+        }
+    });
+
+    function applyFilter() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            window.location.href = '{% url "boothapp:cashflow_report" %}?start_date=' + startDate + '&end_date=' + endDate;
+        }
+    }
+</script>
+{% endblock %}

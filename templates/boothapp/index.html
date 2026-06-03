@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoothHub — Sistem Manajemen Booth F&B</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #F8F6F3;
+            --fg: #1C1917;
+            --muted: #78716C;
+            --accent: #E36414;
+            --accent-light: #FFF0E6;
+            --card: #FFFFFF;
+            --border: #E7E5E4;
+            --sidebar: #1C1917;
+            --sidebar-hover: #292524;
+            --success: #16A34A;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --info: #0891B2;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D6D3D1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #A8A29E; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; min-height: 100vh; background: var(--sidebar); position: fixed; left: 0; top: 0; z-index: 50; transition: transform 0.3s ease; }
+        .sidebar-brand { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #A8A29E; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-nav a:hover { background: var(--sidebar-hover); color: #F5F5F4; }
+        .sidebar-nav a.active { background: var(--sidebar-hover); color: var(--accent); border-left-color: var(--accent); }
+        .sidebar-nav a i { width: 20px; text-align: center; font-size: 15px; }
+        .sidebar-section { padding: 16px 20px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #57534E; font-weight: 700; }
+
+        /* Main Content */
+        .main-content { margin-left: 260px; min-height: 100vh; }
+        .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+
+        /* Cards */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
+
+        /* KPI Cards */
+        .kpi-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); position: relative; overflow: hidden; }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+        .kpi-card.orange::before { background: var(--accent); }
+        .kpi-card.green::before { background: var(--success); }
+        .kpi-card.cyan::before { background: var(--info); }
+        .kpi-card.red::before { background: var(--danger); }
+        .kpi-value { font-size: 28px; font-weight: 900; margin: 8px 0 4px; }
+        .kpi-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+        .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; background: #FAFAF9; border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover td { background: #FAFAF9; }
+
+        /* Badge */
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge-success { background: #DCFCE7; color: #166534; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
+        .badge-info { background: #CFFAFE; color: #155E75; }
+        .badge-muted { background: #F5F5F4; color: #57534E; }
+
+        /* Buttons */
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #C8530F; }
+        .btn-secondary { background: #F5F5F4; color: var(--fg); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #E7E5E4; }
+        .btn-danger { background: #FEE2E2; color: #DC2626; }
+        .btn-danger:hover { background: #FECACA; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card); border-radius: 16px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #44403C; }
+        .form-input, .form-select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.2s; outline: none; }
+        .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(227,100,20,0.1); }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-width: 280px; }
+        .toast-success { background: #166534; color: white; }
+        .toast-warning { background: #92400E; color: white; }
+        .toast-danger { background: #991B1B; color: white; }
+        .toast-info { background: #155E75; color: white; }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Alert strip */
+        .alert-strip { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .alert-strip.danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+        .alert-strip.warning { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+
+        /* Stock bar */
+        .stock-bar { width: 100%; height: 6px; background: #E7E5E4; border-radius: 3px; overflow: hidden; }
+        .stock-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+        /* Tab */
+        .tab-btn { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; background: transparent; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; font-family: inherit; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-btn:hover { color: var(--fg); }
+
+        /* Pulse dot */
+        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+
+        /* Animasi halus */
+        .page-enter { animation: fadeUp 0.3s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Chart container */
+        .chart-container { position: relative; width: 100%; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-store" style="color:white;font-size:16px;"></i>
+                </div>
+                <div>
+                    <div style="color:#F5F5F4;font-weight:800;font-size:18px;">BoothHub</div>
+                    <div style="color:#78716C;font-size:11px;font-weight:500;">Manajemen Booth F&B</div>
+                </div>
+            </div>
+        </div>
+        <nav class="sidebar-nav" style="padding:12px 0;">
+            <div class="sidebar-section">Utama</div>
+            <a href="#" class="active" data-page="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <a href="#" data-page="booth"><i class="fas fa-store-alt"></i> Booth</a>
+            <div class="sidebar-section">Operasional</div>
+            <a href="#" data-page="karyawan"><i class="fas fa-users"></i> Karyawan</a>
+            <a href="#" data-page="stok"><i class="fas fa-boxes-stacked"></i> Stok Bahan</a>
+            <a href="#" data-page="penjualan"><i class="fas fa-cash-register"></i> Penjualan</a>
+            <div class="sidebar-section">Laporan</div>
+            <a href="#" data-page="laporan"><i class="fas fa-chart-bar"></i> Laporan & Analitik</a>
+        </nav>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#292524;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-user" style="color:#A8A29E;font-size:14px;"></i>
+                </div>
+                <div>
+                    <div style="color:#F5F5F4;font-size:13px;font-weight:600;">Admin</div>
+                    <div style="color:#78716C;font-size:11px;">Pemilik Usaha</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button id="menuToggle" class="btn-icon btn-secondary" style="display:none;"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h1 id="pageTitle" style="font-size:20px;font-weight:800;">Dashboard</h1>
+                    <p id="pageSubtitle" style="font-size:12px;color:var(--muted);font-weight:500;">Ringkasan operasional booth Anda</p>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div id="alertBadge" style="position:relative;cursor:pointer;" onclick="App.navigate('stok')">
+                    <div class="btn-icon btn-secondary"><i class="fas fa-bell"></i></div>
+                    <span id="alertCount" style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;">0</span>
+                </div>
+                <div style="font-size:13px;color:var(--muted);font-weight:500;" id="todayDate"></div>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="pageContent" style="padding:24px 32px;"></div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContent"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+    // ============================================
+    // DATA MANAGER — Menangani semua operasi data
+    // ============================================
+    const DM = {
+        data: {},
+
+        init() {
+            const saved = localStorage.getItem('boothhub_data');
+            if (saved) {
+                this.data = JSON.parse(saved);
+            } else {
+                this.seedData();
+            }
+            this.save();
+        },
+
+        save() {
+            localStorage.setItem('boothhub_data', JSON.stringify(this.data));
+        },
+
+        // Data awal untuk demo
+        seedData() {
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0];
+
+            this.data = {
+                booths: [
+                    { id: 1, name: 'Fresh Drink Booth 1', location: 'Mall Central Atrium', type: 'minuman', status: 'active', icon: 'fa-mug-hot' },
+                    { id: 2, name: 'Fresh Chicken Booth', location: 'Mall Central Lantai 2', type: 'makanan', status: 'active', icon: 'fa-drumstick-bite' },
+                    { id: 3, name: 'Smoothie & Coffee Corner', location: 'Food Court Lt. 3', type: 'campuran', status: 'active', icon: 'fa-blender' },
+                    { id: 4, name: 'Es Teh & Kopi Stand', location: 'Area Parkir Timur', type: 'minuman', status: 'active', icon: 'fa-glass-water' },
+                ],
+                employees: [
+                    { id: 1, name: 'Budi Santoso', booth_id: 1, position: 'Kasir', phone: '081234567890', shift: 'pagi', status: 'active' },
+                    { id: 2, name: 'Siti Aminah', booth_id: 1, position: 'Barista', phone: '081234567891', shift: 'siang', status: 'active' },
+                    { id: 3, name: 'Ahmad Ridwan', booth_id: 2, position: 'Koki', phone: '081234567892', shift: 'pagi', status: 'active' },
+                    { id: 4, name: 'Dewi Lestari', booth_id: 2, position: 'Kasir', phone: '081234567893', shift: 'siang', status: 'active' },
+                    { id: 5, name: 'Rizky Pratama', booth_id: 3, position: 'Barista', phone: '081234567894', shift: 'pagi', status: 'active' },
+                    { id: 6, name: 'Nur Hidayah', booth_id: 3, position: 'Kasir', phone: '081234567895', shift: 'siang', status: 'active' },
+                    { id: 7, name: 'Fajar Maulana', booth_id: 4, position: 'Kasir', phone: '081234567896', shift: 'pagi', status: 'active' },
+                    { id: 8, name: 'Putri Wulandari', booth_id: 4, position: 'Barista', phone: '081234567897', shift: 'pagi', status: 'inactive' },
+                ],
+                inventory: [
+                    { id: 1, name: 'Teh Celup', unit: 'box', stock: 15, min_stock: 5, booth_id: 1, category: 'bahan_minuman', price_per_unit: 25000 },
+                    { id: 2, name: 'Gula Pasir', unit: 'kg', stock: 3, min_stock: 5, booth_id: 1, category: 'bahan_minuman', price_per_unit: 15000 },
+                    { id: 3, name: 'Biji Kopi', unit: 'kg', stock: 8, min_stock: 3, booth_id: 1, category: 'bahan_minuman', price_per_unit: 120000 },
+                    { id: 4, name: 'Susu UHT', unit: 'liter', stock: 10, min_stock: 5, booth_id: 1, category: 'bahan_minuman', price_per_unit: 18000 },
+                    { id: 5, name: 'Ayam Fillet', unit: 'kg', stock: 4, min_stock: 5, booth_id: 2, category: 'bahan_makanan', price_per_unit: 55000 },
+                    { id: 6, name: 'Tepung Roti', unit: 'kg', stock: 6, min_stock: 3, booth_id: 2, category: 'bahan_makanan', price_per_unit: 25000 },
+                    { id: 7, name: 'Minyak Goreng', unit: 'liter', stock: 2, min_stock: 5, booth_id: 2, category: 'bahan_makanan', price_per_unit: 20000 },
+                    { id: 8, name: 'Bumbu Marinasi', unit: 'pack', stock: 10, min_stock: 3, booth_id: 2, category: 'bahan_makanan', price_per_unit: 15000 },
+                    { id: 9, name: 'Buah Segar (Mix)', unit: 'kg', stock: 5, min_stock: 4, booth_id: 3, category: 'bahan_minuman', price_per_unit: 45000 },
+                    { id: 10, name: 'Yogurt', unit: 'cup', stock: 20, min_stock: 10, booth_id: 3, category: 'bahan_minuman', price_per_unit: 8000 },
+                    { id: 11, name: 'Es Batu', unit: 'pack', stock: 8, min_stock: 5, booth_id: 3, category: 'bahan_minuman', price_per_unit: 10000 },
+                    { id: 12, name: 'Syrup Variant', unit: 'botol', stock: 12, min_stock: 4, booth_id: 4, category: 'bahan_minuman', price_per_unit: 30000 },
+                    { id: 13, name: 'Es Batu', unit: 'pack', stock: 3, min_stock: 5, booth_id: 4, category: 'bahan_minuman', price_per_unit: 10000 },
+                    { id: 14, name: 'Cup Plastik', unit: 'rim', stock: 2, min_stock: 3, booth_id: 4, category: 'kemasan', price_per_unit: 45000 },
+                    { id: 15, name: 'Tissue', unit: 'pack', stock: 4, min_stock: 2, booth_id: 1, category: 'kemasan', price_per_unit: 12000 },
+                ],
+                menu_items: [
+                    { id: 1, booth_id: 1, name: 'Es Teh Manis', price: 8000, category: 'minuman' },
+                    { id: 2, booth_id: 1, name: 'Es Kopi Susu', price: 15000, category: 'minuman' },
+                    { id: 3, booth_id: 1, name: 'Kopi Hitam', price: 10000, category: 'minuman' },
+                    { id: 4, booth_id: 2, name: 'Ayam Goreng Krispi (5pcs)', price: 25000, category: 'makanan' },
+                    { id: 5, booth_id: 2, name: 'Ayam Bakar Madu (5pcs)', price: 28000, category: 'makanan' },
+                    { id: 6, booth_id: 2, name: 'Paket Ayam + Nasi', price: 30000, category: 'makanan' },
+                    { id: 7, booth_id: 3, name: 'Smoothie Mango', price: 18000, category: 'minuman' },
+                    { id: 8, booth_id: 3, name: 'Smoothie Berry', price: 20000, category: 'minuman' },
+                    { id: 9, booth_id: 3, name: 'Cappuccino', price: 22000, category: 'minuman' },
+                    { id: 10, booth_id: 4, name: 'Es Teh Tarik', price: 10000, category: 'minuman' },
+                    { id: 11, booth_id: 4, name: 'Es Kopi Coklat', price: 16000, category: 'minuman' },
+                    { id: 12, booth_id: 4, name: 'Es Jeruk Segar', price: 12000, category: 'minuman' },
+                ],
+                sales: []
+            };
+
+            // Generate data penjualan 7 hari terakhir
+            let saleId = 1;
+            for (let d = 6; d >= 0; d--) {
+                const date = new Date(Date.now() - d * 86400000).toISOString().split('T')[0];
+                this.data.booths.forEach(booth => {
+                    const boothMenu = this.data.menu_items.filter(m => m.booth_id === booth.id);
+                    const numSales = 5 + Math.floor(Math.random() * 10);
+                    for (let s = 0; s < numSales; s++) {
+                        const items = [];
+                        const numItems = 1 + Math.floor(Math.random() * 3);
+                        for (let i = 0; i < numItems; i++) {
+                            const menuItem = boothMenu[Math.floor(Math.random() * boothMenu.length)];
+                            const qty = 1 + Math.floor(Math.random() * 3);
+                            items.push({ menu_item_id: menuItem.id, name: menuItem.name, qty, price: menuItem.price, subtotal: qty * menuItem.price });
+                        }
+                        const total = items.reduce((s, i) => s + i.subtotal, 0);
+                        this.data.sales.push({
+                            id: saleId++,
+                            booth_id: booth.id,
+                            date,
+                            items,
+                            total,
+                            payment: Math.random() > 0.5 ? 'tunai' : 'digital',
+                            created_at: `${date}T${8 + Math.floor(Math.random() * 12)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}:00`
+                        });
+                    }
+                });
+            }
+
+            this.save();
+        },
+
+        // Helper methods
+        getBooth(id) { return this.data.booths.find(b => b.id === id); },
+        getEmployeesByBooth(boothId) { return this.data.employees.filter(e => e.booth_id === boothId); },
+        getInventoryByBooth(boothId) { return this.data.inventory.filter(i => i.booth_id === boothId); },
+        getMenuByBooth(boothId) { return this.data.menu_items.filter(m => m.booth_id === boothId); },
+        getSalesByBooth(boothId) { return this.data.sales.filter(s => s.booth_id === boothId); },
+        getSalesByDate(date) { return this.data.sales.filter(s => s.date === date); },
+        getLowStockItems() { return this.data.inventory.filter(i => i.stock <= i.min_stock); },
+
+        getTodaySales() {
+            const today = new Date().toISOString().split('T')[0];
+            return this.data.sales.filter(s => s.date === today);
+        },
+
+        getTodayRevenue() {
+            return this.getTodaySales().reduce((sum, s) => sum + s.total, 0);
+        },
+
+        getRevenueByDateRange(startDate, endDate) {
+            return this.data.sales
+                .filter(s => s.date >= startDate && s.date <= endDate)
+                .reduce((sum, s) => sum + s.total, 0);
+        },
+
+        nextId(collection) {
+            const items = this.data[collection];
+            return items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
+        },
+
+        formatCurrency(amount) {
+            return 'Rp ' + amount.toLocaleString('id-ID');
+        },
+
+        formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+    };
+
+    // ============================================
+    // TOAST NOTIFICATION
+    // ============================================
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const icons = { success: 'fa-check-circle', warning: 'fa-exclamation-triangle', danger: 'fa-times-circle', info: 'fa-info-circle' };
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i class="fas ${icons[type]}"></i> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(100px)'; setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    // ============================================
+    // MODAL
+    // ============================================
+    function openModal(html) {
+        document.getElementById('modalContent').innerHTML = html;
+        document.getElementById('modalOverlay').classList.add('active');
+    }
+    function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+    }
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ============================================
+    // APP ROUTER
+    // ============================================
+    const App = {
+        currentPage: 'dashboard',
+        charts: {},
+
+        navigate(page) {
+            this.currentPage = page;
+            // Destroy existing charts
+            Object.values(this.charts).forEach(c => c.destroy());
+            this.charts = {};
+
+            // Update sidebar
+            document.querySelectorAll('.sidebar-nav a').forEach(a => {
+                a.classList.toggle('active', a.dataset.page === page);
+            });
+
+            // Update topbar
+            const titles = {
+                dashboard: ['Dashboard', 'Ringkasan operasional booth Anda'],
+                booth: ['Booth', 'Kelola semua booth Anda'],
+                karyawan: ['Karyawan', 'Manajemen karyawan per booth'],
+                stok: ['Stok Bahan Baku', 'Pantau dan kelola persediaan bahan'],
+                penjualan: ['Penjualan', 'Catat dan pantau penjualan harian'],
+                laporan: ['Laporan & Analitik', 'Analisis mendalam performa booth']
+            };
+            document.getElementById('pageTitle').textContent = titles[page][0];
+            document.getElementById('pageSubtitle').textContent = titles[page][1];
+
+            // Render page
+            this.render();
+
+            // Close sidebar on mobile
+            document.getElementById('sidebar').classList.remove('open');
+        },
+
+        render() {
+            const content = document.getElementById('pageContent');
+            content.innerHTML = '';
+            content.className = 'page-enter';
+            switch (this.currentPage) {
+                case 'dashboard': Pages.dashboard(content); break;
+                case 'booth': Pages.booth(content); break;
+                case 'karyawan': Pages.karyawan(content); break;
+                case 'stok': Pages.stok(content); break;
+                case 'penjualan': Pages.penjualan(content); break;
+                case 'laporan': Pages.laporan(content); break;
+            }
+            this.updateAlertBadge();
+        },
+
+        updateAlertBadge() {
+            const lowStock = DM.getLowStockItems();
+            document.getElementById('alertCount').textContent = lowStock.length;
+            document.getElementById('alertCount').style.display = lowStock.length > 0 ? 'flex' : 'none';
+        }
+    };
+
+    // ============================================
+    // PAGE RENDERERS
+    // ============================================
+    const Pages = {
+
+        // ===================== DASHBOARD =====================
+        dashboard(container) {
+            const today = new Date().toISOString().split('T')[0];
+            const todaySales = DM.getTodaySales();
+            const todayRevenue = DM.getTodayRevenue();
+            const totalEmployees = DM.data.employees.filter(e => e.status === 'active').length;
+            const lowStockItems = DM.getLowStockItems();
+            const activeBooths = DM.data.booths.filter(b => b.status === 'active').length;
+
+            // Kemarin revenue untuk perbandingan
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const yesterdayRevenue = DM.getSalesByDate(yesterday).reduce((s, sale) => s + sale.total, 0);
+            const revenueChange = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100).toFixed(1) : 0;
+
+            // 7 hari terakhir
+            const last7 = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+                last7.push({ date: d, revenue: DM.getSalesByDate(d).reduce((s, sale) => s + sale.total, 0) });
+            }
+
+            let html = `
+            <!-- Alert Stok Rendah -->
+            ${lowStockItems.length > 0 ? `
+            <div style="margin-bottom:20px;">
+                <div class="alert-strip danger"><i class="fas fa-exclamation-circle"></i> <strong>${lowStockItems.length} bahan</strong> mencapai batas minimum stok — perlu segera di-restock!</div>
+            </div>` : ''}
+
+            <!-- KPI Cards -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px;">
+                <div class="kpi-card orange">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div class="kpi-label">Pendapatan Hari Ini</div>
+                            <div class="kpi-value" style="color:var(--accent);">${DM.formatCurrency(todayRevenue)}</div>
+                            <div style="font-size:12px;color:${revenueChange >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                                <i class="fas fa-arrow-${revenueChange >= 0 ? 'up' : 'down'}"></i> ${Math.abs(revenueChange)}% dari kemarin
+                            </div>
+                        </div>
+                        <div class="kpi-icon" style="background:var(--accent-light);color:var(--accent);"><i class="fas fa-wallet"></i></div>
+                    </div>
+                </div>
+                <div class="kpi-card cyan">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div class="kpi-label">Transaksi Hari Ini</div>
+                            <div class="kpi-value" style="color:var(--info);">${todaySales.length}</div>
+                            <div style="font-size:12px;color:var(--muted);">Rata-rata ${todaySales.length > 0 ? DM.formatCurrency(Math.round(todayRevenue / todaySales.length)) : 'Rp 0'}/transaksi</div>
+                        </div>
+                        <div class="kpi-icon" style="background:#CFFAFE;color:var(--info);"><i class="fas fa-receipt"></i></div>
+                    </div>
+                </div>
+                <div class="kpi-card green">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div class="kpi-label">Booth Aktif</div>
+                            <div class="kpi-value" style="color:var(--success);">${activeBooths}</div>
+                            <div style="font-size:12px;color:var(--muted);">dari ${DM.data.booths.length} total booth</div>
+                        </div>
+                        <div class="kpi-icon" style="background:#DCFCE7;color:var(--success);"><i class="fas fa-store-alt"></i></div>
+                    </div>
+                </div>
+                <div class="kpi-card red">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div class="kpi-label">Stok Rendah</div>
+                            <div class="kpi-value" style="color:var(--danger);">${lowStockItems.length}</div>
+                            <div style="font-size:12px;color:var(--muted);">${totalEmployees} karyawan aktif</div>
+                        </div>
+                        <div class="kpi-icon" style="background:#FEE2E2;color:var(--danger);"><i class="fas fa-triangle-exclamation"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;">
+                <div class="card">
+                    <div class="card-header">Pendapatan 7 Hari Terakhir</div>
+                    <div style="padding:20px;">
+                        <div class="chart-container" style="height:280px;"><canvas id="revenueChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Penjualan per Booth (Hari Ini)</div>
+                    <div style="padding:20px;">
+                        <div class="chart-container" style="height:280px;"><canvas id="boothPieChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="card">
+                    <div class="card-header">
+                        Bahan Stok Rendah
+                        <a href="#" onclick="App.navigate('stok');return false;" style="font-size:12px;color:var(--accent);font-weight:600;text-decoration:none;">Lihat Semua <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div style="padding:0;">
+                        <table class="data-table">
+                            <thead><tr><th>Bahan</th><th>Booth</th><th>Stok</th><th>Min</th><th>Status</th></tr></thead>
+                            <tbody>
+                                ${lowStockItems.length === 0 ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Semua stok aman</td></tr>' :
+                                lowStockItems.slice(0, 6).map(item => {
+                                    const booth = DM.getBooth(item.booth_id);
+                                    const isCritical = item.stock <= item.min_stock * 0.5;
+                                    return `<tr>
+                                        <td style="font-weight:600;">${item.name}</td>
+                                        <td>${booth ? booth.name : '-'}</td>
+                                        <td><span style="color:${isCritical ? 'var(--danger)' : 'var(--warning)'};font-weight:700;">${item.stock}</span> ${item.unit}</td>
+                                        <td>${item.min_stock} ${item.unit}</td>
+                                        <td><span class="badge ${isCritical ? 'badge-danger' : 'badge-warning'}">${isCritical ? 'Kritis' : 'Rendah'}</span></td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        Performa Booth
+                    </div>
+                    <div style="padding:16px;">
+                        ${DM.data.booths.filter(b => b.status === 'active').map(booth => {
+                            const boothSales = DM.getSalesByBooth(booth.id).filter(s => s.date === today);
+                            const boothRevenue = boothSales.reduce((s, sale) => s + sale.total, 0);
+                            const empCount = DM.getEmployeesByBooth(booth.id).filter(e => e.status === 'active').length;
+                            const lowCount = DM.getInventoryByBooth(booth.id).filter(i => i.stock <= i.min_stock).length;
+                            return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas ${booth.icon}" style="color:var(--accent);font-size:16px;"></i>
+                                </div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:700;font-size:14px;">${booth.name}</div>
+                                    <div style="font-size:12px;color:var(--muted);">${booth.location} &bull; ${empCount} karyawan</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-weight:800;font-size:15px;">${DM.formatCurrency(boothRevenue)}</div>
+                                    <div style="font-size:11px;color:var(--muted);">${boothSales.length} transaksi</div>
+                                </div>
+                                ${lowCount > 0 ? `<div style="margin-left:8px;"><span class="badge badge-danger">${lowCount} stok</span></div>` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>`;
+
+            container.innerHTML = html;
+
+            // Revenue Chart
+            const ctx1 = document.getElementById('revenueChart').getContext('2d');
+            App.charts.revenueChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: last7.map(d => DM.formatDate(d.date)),
+                    datasets: [{
+                        label: 'Pendapatan',
+                        data: last7.map(d => d.revenue),
+                        backgroundColor: 'rgba(227,100,20,0.8)',
+                        borderColor: '#E36414',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barThickness: 32
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1000) + 'k' }, grid: { color: '#F5F5F4' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Booth Pie Chart
+            const ctx2 = document.getElementById('boothPieChart').getContext('2d');
+            const boothRevenues = DM.data.booths.map(b => {
+                return { name: b.name, revenue: DM.getSalesByBooth(b.id).filter(s => s.date === today).reduce((s, sale) => s + sale.total, 0) };
+            });
+            const pieColors = ['#E36414', '#0891B2', '#16A34A', '#9333EA'];
+            App.charts.boothPieChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: boothRevenues.map(b => b.name),
+                    datasets: [{ data: boothRevenues.map(b => b.revenue), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 11, family: 'Plus Jakarta Sans' }, padding: 12, usePointStyle: true } } },
+                    cutout: '65%'
+                }
+            });
+        },
+
+        // ===================== BOOTH =====================
+        booth(container) {
+            let html = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div style="font-size:14px;color:var(--muted);">${DM.data.booths.length} booth terdaftar</div>
+                <button class="btn btn-primary" onclick="BoothModule.openAdd()"><i class="fas fa-plus"></i> Tambah Booth</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+                ${DM.data.booths.map(booth => {
+                    const empCount = DM.getEmployeesByBooth(booth.id).filter(e => e.status === 'active').length;
+                    const menuCount = DM.getMenuByBooth(booth.id).length;
+                    const lowCount = DM.getInventoryByBooth(booth.id).filter(i => i.stock <= i.min_stock).length;
+                    const todayRev = DM.getSalesByBooth(booth.id).filter(s => s.date === new Date().toISOString().split('T')[0]).reduce((s, sale) => s + sale.total, 0);
+                    return `<div class="card" style="overflow:visible;">
+                        <div style="padding:20px;">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                                <div style="display:flex;gap:12px;align-items:center;">
+                                    <div style="width:48px;height:48px;border-radius:12px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                                        <i class="fas ${booth.icon}" style="color:var(--accent);font-size:20px;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:800;font-size:16px;">${booth.name}</div>
+                                        <div style="font-size:12px;color:var(--muted);"><i class="fas fa-map-marker-alt"></i> ${booth.location}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:4px;">
+                                    <button class="btn-icon btn-secondary btn-sm" onclick="BoothModule.openEdit(${booth.id})" title="Edit"><i class="fas fa-pen"></i></button>
+                                    <button class="btn-icon btn-danger btn-sm" onclick="BoothModule.remove(${booth.id})" title="Hapus"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                                <span class="badge ${booth.status === 'active' ? 'badge-success' : 'badge-muted'}">${booth.status === 'active' ? 'Aktif' : 'Nonaktif'}</span>
+                                <span class="badge badge-info">${booth.type}</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;padding:12px;background:#FAFAF9;border-radius:8px;">
+                                <div>
+                                    <div style="font-size:12px;color:var(--muted);">Karyawan</div>
+                                    <div style="font-weight:800;font-size:18px;">${empCount}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:12px;color:var(--muted);">Menu</div>
+                                    <div style="font-weight:800;font-size:18px;">${menuCount}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:12px;color:var(--muted);">Stok Rendah</div>
+                                    <div style="font-weight:800;font-size:18px;color:${lowCount > 0 ? 'var(--danger)' : 'var(--fg)'};">${lowCount}</div>
+                                </div>
+                            </div>
+                            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-size:12px;color:var(--muted);">Pendapatan hari ini</span>
+                                <span style="font-weight:800;color:var(--accent);">${DM.formatCurrency(todayRev)}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+            container.innerHTML = html;
+        },
+
+        // ===================== KARYAWAN =====================
+        karyawan(container) {
+            const boothId = this._karyawanBooth || 'all';
+            const filtered = boothId === 'all' ? DM.data.employees : DM.data.employees.filter(e => e.booth_id === parseInt(boothId));
+
+            let html = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <select class="form-select" style="width:auto;min-width:200px;" onchange="Pages._karyawanBooth=this.value;App.render();">
+                        <option value="all" ${boothId === 'all' ? 'selected' : ''}>Semua Booth</option>
+                        ${DM.data.booths.map(b => `<option value="${b.id}" ${boothId == b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+                    </select>
+                    <span style="font-size:14px;color:var(--muted);">${filtered.length} karyawan</span>
+                </div>
+                <button class="btn btn-primary" onclick="KaryawanModule.openAdd()"><i class="fas fa-plus"></i> Tambah Karyawan</button>
+            </div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Nama</th><th>Booth</th><th>Posisi</th><th>Shift</th><th>Telepon</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody>
+                        ${filtered.map(emp => {
+                            const booth = DM.getBooth(emp.booth_id);
+                            const shiftLabel = { pagi: 'Pagi (06-14)', siang: 'Siang (14-22)', malam: 'Malam (22-06)' };
+                            return `<tr>
+                                <td><div style="display:flex;align-items:center;gap:10px;">
+                                    <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--accent);">${emp.name.charAt(0)}</div>
+                                    <span style="font-weight:600;">${emp.name}</span>
+                                </div></td>
+                                <td>${booth ? booth.name : '-'}</td>
+                                <td>${emp.position}</td>
+                                <td>${shiftLabel[emp.shift] || emp.shift}</td>
+                                <td>${emp.phone}</td>
+                                <td><span class="badge ${emp.status === 'active' ? 'badge-success' : 'badge-muted'}">${emp.status === 'active' ? 'Aktif' : 'Nonaktif'}</span></td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm" onclick="KaryawanModule.openEdit(${emp.id})"><i class="fas fa-pen"></i></button>
+                                    <button class="btn btn-danger btn-sm" onclick="KaryawanModule.toggleStatus(${emp.id})">${emp.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}</button>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+            container.innerHTML = html;
+        },
+
+        // ===================== STOK BAHAN =====================
+        stok(container) {
+            const boothId = this._stokBooth || 'all';
+            const filterCat = this._stokCat || 'all';
+            let items = boothId === 'all' ? DM.data.inventory : DM.data.inventory.filter(i => i.booth_id === parseInt(boothId));
+            if (filterCat !== 'all') items = items.filter(i => i.category === filterCat);
+            const lowItems = items.filter(i => i.stock <= i.min_stock);
+
+            let html = `
+            ${lowItems.length > 0 ? `<div style="margin-bottom:16px;">
+                <div class="alert-strip danger"><i class="fas fa-exclamation-triangle"></i> <strong>${lowItems.length} bahan</strong> di bawah batas minimum stok dari ${items.length} total bahan.</div>
+            </div>` : ''}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <select class="form-select" style="width:auto;min-width:200px;" onchange="Pages._stokBooth=this.value;App.render();">
+                        <option value="all" ${boothId === 'all' ? 'selected' : ''}>Semua Booth</option>
+                        ${DM.data.booths.map(b => `<option value="${b.id}" ${boothId == b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+                    </select>
+                    <select class="form-select" style="width:auto;" onchange="Pages._stokCat=this.value;App.render();">
+                        <option value="all" ${filterCat === 'all' ? 'selected' : ''}>Semua Kategori</option>
+                        <option value="bahan_minuman" ${filterCat === 'bahan_minuman' ? 'selected' : ''}>Bahan Minuman</option>
+                        <option value="bahan_makanan" ${filterCat === 'bahan_makanan' ? 'selected' : ''}>Bahan Makanan</option>
+                        <option value="kemasan" ${filterCat === 'kemasan' ? 'selected' : ''}>Kemasan</option>
+                    </select>
+                    <span style="font-size:14px;color:var(--muted);">${items.length} item</span>
+                </div>
+                <button class="btn btn-primary" onclick="StokModule.openAdd()"><i class="fas fa-plus"></i> Tambah Bahan</button>
+            </div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Bahan</th><th>Booth</th><th>Kategori</th><th>Stok</th><th>Level</th><th>Min</th><th>Status</th><th>Aksi</th></tr></thead>
+                    <tbody>
+                        ${items.map(item => {
+                            const booth = DM.getBooth(item.booth_id);
+                            const pct = Math.min((item.stock / (item.min_stock * 3)) * 100, 100);
+                            const isLow = item.stock <= item.min_stock;
+                            const isCritical = item.stock <= item.min_stock * 0.5;
+                            const barColor = isCritical ? 'var(--danger)' : isLow ? 'var(--warning)' : 'var(--success)';
+                            const catLabel = { bahan_minuman: 'Bahan Minuman', bahan_makanan: 'Bahan Makanan', kemasan: 'Kemasan' };
+                            return `<tr style="${isCritical ? 'background:#FEF2F2;' : ''}">
+                                <td style="font-weight:600;">${item.name}</td>
+                                <td>${booth ? booth.name : '-'}</td>
+                                <td><span class="badge badge-info">${catLabel[item.category] || item.category}</span></td>
+                                <td><strong>${item.stock}</strong> ${item.unit}</td>
+                                <td style="width:100px;">
+                                    <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
+                                </td>
+                                <td>${item.min_stock} ${item.unit}</td>
+                                <td><span class="badge ${isCritical ? 'badge-danger' : isLow ? 'badge-warning' : 'badge-success'}">${isCritical ? 'Kritis' : isLow ? 'Rendah' : 'Aman'}</span></td>
+                                <td style="white-space:nowrap;">
+                                    <button class="btn btn-secondary btn-sm" onclick="StokModule.openRestock(${item.id})" title="Restock"><i class="fas fa-plus-circle"></i></button>
+                                    <button class="btn btn-secondary btn-sm" onclick="StokModule.openEdit(${item.id})" title="Edit"><i class="fas fa-pen"></i></button>
+                                    <button class="btn btn-danger btn-sm" onclick="StokModule.remove(${item.id})" title="Hapus"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+            container.innerHTML = html;
+        },
+
+        // ===================== PENJUALAN =====================
+        penjualan(container) {
+            const selectedDate = this._salesDate || new Date().toISOString().split('T')[0];
+            const selectedBooth = this._salesBooth || 'all';
+            let sales = DM.getSalesByDate(selectedDate);
+            if (selectedBooth !== 'all') sales = sales.filter(s => s.booth_id === parseInt(selectedBooth));
+            const totalRevenue = sales.reduce((s, sale) => s + sale.total, 0);
+
+            let html = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <input type="date" class="form-input" style="width:auto;" value="${selectedDate}" onchange="Pages._salesDate=this.value;App.render();">
+                    <select class="form-select" style="width:auto;min-width:200px;" onchange="Pages._salesBooth=this.value;App.render();">
+                        <option value="all" ${selectedBooth === 'all' ? 'selected' : ''}>Semua Booth</option>
+                        ${DM.data.booths.map(b => `<option value="${b.id}" ${selectedBooth == b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+                    </select>
+                    <div style="padding:8px 16px;background:var(--accent-light);border-radius:8px;font-weight:700;color:var(--accent);">
+                        Total: ${DM.formatCurrency(totalRevenue)} (${sales.length} transaksi)
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="SalesModule.openAdd()"><i class="fas fa-plus"></i> Catat Penjualan</button>
+            </div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>ID</th><th>Waktu</th><th>Booth</th><th>Item</th><th>Total</th><th>Pembayaran</th><th>Aksi</th></tr></thead>
+                    <tbody>
+                        ${sales.length === 0 ? '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px;">Belum ada penjualan pada tanggal ini</td></tr>' :
+                        sales.sort((a, b) => b.created_at.localeCompare(a.created_at)).map(sale => {
+                            const booth = DM.getBooth(sale.booth_id);
+                            return `<tr>
+                                <td style="font-weight:600;color:var(--muted);">#${String(sale.id).padStart(4, '0')}</td>
+                                <td>${sale.created_at.split('T')[1]?.substring(0, 5) || '-'}</td>
+                                <td>${booth ? booth.name : '-'}</td>
+                                <td style="max-width:250px;">
+                                    ${sale.items.map(i => `<div style="font-size:12px;">${i.name} x${i.qty} <span style="color:var(--muted);">${DM.formatCurrency(i.subtotal)}</span></div>`).join('')}
+                                </td>
+                                <td style="font-weight:800;color:var(--accent);">${DM.formatCurrency(sale.total)}</td>
+                                <td><span class="badge ${sale.payment === 'tunai' ? 'badge-success' : 'badge-info'}">${sale.payment === 'tunai' ? 'Tunai' : 'Digital'}</span></td>
+                                <td><button class="btn btn-danger btn-sm" onclick="SalesModule.remove(${sale.id})"><i class="fas fa-trash"></i></button></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+            container.innerHTML = html;
+        },
+
+        // ===================== LAPORAN =====================
+        laporan(container) {
+            const today = new Date();
+            const last30 = [];
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date(today); d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                last30.push({
+                    date: dateStr,
+                    dayName: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+                    revenue: DM.getSalesByDate(dateStr).reduce((s, sale) => s + sale.total, 0),
+                    transactions: DM.getSalesByDate(dateStr).length
+                });
+            }
+
+            const total30Revenue = last30.reduce((s, d) => s + d.revenue, 0);
+            const total30Tx = last30.reduce((s, d) => s + d.transactions, 0);
+            const avgDaily = Math.round(total30Revenue / 30);
+
+            // Per booth revenue
+            const boothRevenues = DM.data.booths.map(b => {
+                const rev = DM.data.sales.filter(s => s.booth_id === b.id).reduce((s, sale) => s + sale.total, 0);
+                const tx = DM.data.sales.filter(s => s.booth_id === b.id).length;
+                return { ...b, revenue: rev, transactions: tx };
+            }).sort((a, b) => b.revenue - a.revenue);
+
+            // Top menu items
+            const menuItemSales = {};
+            DM.data.sales.forEach(sale => {
+                sale.items.forEach(item => {
+                    if (!menuItemSales[item.name]) menuItemSales[item.name] = { qty: 0, revenue: 0 };
+                    menuItemSales[item.name].qty += item.qty;
+                    menuItemSales[item.name].revenue += item.subtotal;
+                });
+            });
+            const topMenuItems = Object.entries(menuItemSales)
+                .map(([name, data]) => ({ name, ...data }))
+                .sort((a, b) => b.revenue - a.revenue)
+                .slice(0, 8);
+
+            let html = `
+            <!-- Summary KPIs -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+                <div class="kpi-card orange">
+                    <div class="kpi-label">Total Pendapatan 30 Hari</div>
+                    <div class="kpi-value" style="color:var(--accent);font-size:22px;">${DM.formatCurrency(total30Revenue)}</div>
+                </div>
+                <div class="kpi-card cyan">
+                    <div class="kpi-label">Rata-rata Harian</div>
+                    <div class="kpi-value" style="color:var(--info);font-size:22px;">${DM.formatCurrency(avgDaily)}</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-label">Total Transaksi 30 Hari</div>
+                    <div class="kpi-value" style="color:var(--success);font-size:22px;">${total30Tx}</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                <div class="card">
+                    <div class="card-header">Tren Pendapatan 30 Hari</div>
+                    <div style="padding:20px;">
+                        <div class="chart-container" style="height:280px;"><canvas id="trendChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Pendapatan per Booth (30 Hari)</div>
+                    <div style="padding:20px;">
+                        <div class="chart-container" style="height:280px;"><canvas id="boothBarChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                <div class="card">
+                    <div class="card-header">Top Menu Terlaris</div>
+                    <div style="padding:0;">
+                        <table class="data-table">
+                            <thead><tr><th>#</th><th>Menu</th><th>Qty Terjual</th><th>Pendapatan</th></tr></thead>
+                            <tbody>
+                                ${topMenuItems.map((item, i) => `<tr>
+                                    <td style="font-weight:700;color:${i < 3 ? 'var(--accent)' : 'var(--muted)'};">${i + 1}</td>
+                                    <td style="font-weight:600;">${item.name}</td>
+                                    <td>${item.qty}</td>
+                                    <td style="font-weight:700;">${DM.formatCurrency(item.revenue)}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Perbandingan Booth</div>
+                    <div style="padding:0;">
+                        <table class="data-table">
+                            <thead><tr><th>Booth</th><th>Pendapatan</th><th>Transaksi</th><th>Rata-rata/Tx</th></tr></thead>
+                            <tbody>
+                                ${boothRevenues.map(b => `<tr>
+                                    <td><div style="display:flex;align-items:center;gap:8px;">
+                                        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                                            <i class="fas ${b.icon}" style="color:var(--accent);font-size:12px;"></i>
+                                        </div>
+                                        <span style="font-weight:600;">${b.name}</span>
+                                    </div></td>
+                                    <td style="font-weight:800;color:var(--accent);">${DM.formatCurrency(b.revenue)}</td>
+                                    <td>${b.transactions}</td>
+                                    <td>${b.transactions > 0 ? DM.formatCurrency(Math.round(b.revenue / b.transactions)) : '-'}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metode Pembayaran Chart -->
+            <div class="card" style="margin-bottom:24px;">
+                <div class="card-header">Distribusi Metode Pembayaran</div>
+                <div style="padding:20px;display:flex;align-items:center;gap:40px;">
+                    <div style="width:200px;height:200px;"><canvas id="paymentChart"></canvas></div>
+                    <div>
+                        ${(() => {
+                            const tunai = DM.data.sales.filter(s => s.payment === 'tunai');
+                            const digital = DM.data.sales.filter(s => s.payment === 'digital');
+                            const tunaiRev = tunai.reduce((s, sale) => s + sale.total, 0);
+                            const digitalRev = digital.reduce((s, sale) => s + sale.total, 0);
+                            return `
+                            <div style="margin-bottom:16px;">
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                                    <div style="width:12px;height:12px;border-radius:3px;background:var(--success);"></div>
+                                    <span style="font-weight:600;">Tunai</span>
+                                </div>
+                                <div style="font-size:20px;font-weight:800;">${DM.formatCurrency(tunaiRev)}</div>
+                                <div style="font-size:12px;color:var(--muted);">${tunai.length} transaksi</div>
+                            </div>
+                            <div>
+                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                                    <div style="width:12px;height:12px;border-radius:3px;background:var(--info);"></div>
+                                    <span style="font-weight:600;">Digital</span>
+                                </div>
+                                <div style="font-size:20px;font-weight:800;">${DM.formatCurrency(digitalRev)}</div>
+                                <div style="font-size:12px;color:var(--muted);">${digital.length} transaksi</div>
+                            </div>`;
+                        })()}
+                    </div>
+                </div>
+            </div>`;
+
+            container.innerHTML = html;
+
+            // Trend Chart
+            const ctx1 = document.getElementById('trendChart').getContext('2d');
+            App.charts.trendChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: last30.map(d => d.dayName + ' ' + d.date.split('-')[2]),
+                    datasets: [{
+                        label: 'Pendapatan',
+                        data: last30.map(d => d.revenue),
+                        borderColor: '#E36414',
+                        backgroundColor: 'rgba(227,100,20,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 6,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1000) + 'k' }, grid: { color: '#F5F5F4' } },
+                        x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Booth Bar Chart
+            const ctx2 = document.getElementById('boothBarChart').getContext('2d');
+            const colors = ['#E36414', '#0891B2', '#16A34A', '#9333EA'];
+            App.charts.boothBarChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: boothRevenues.map(b => b.name),
+                    datasets: [{ data: boothRevenues.map(b => b.revenue), backgroundColor: colors, borderRadius: 8, barThickness: 40 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1000) + 'k' }, grid: { color: '#F5F5F4' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Payment Doughnut
+            const ctx3 = document.getElementById('paymentChart').getContext('2d');
+            const tunaiCount = DM.data.sales.filter(s => s.payment === 'tunai').length;
+            const digitalCount = DM.data.sales.filter(s => s.payment === 'digital').length;
+            App.charts.paymentChart = new Chart(ctx3, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tunai', 'Digital'],
+                    datasets: [{ data: [tunaiCount, digitalCount], backgroundColor: ['#16A34A', '#0891B2'], borderWidth: 2, borderColor: '#fff' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
+            });
+        }
+    };
+
+    // ============================================
+    // MODULE: Booth CRUD
+    // ============================================
+    const BoothModule = {
+        openAdd() {
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Tambah Booth Baru</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Nama Booth</label><input type="text" class="form-input" id="m_booth_name" placeholder="Contoh: Es Teh Stand 2"></div>
+                    <div class="form-group"><label class="form-label">Lokasi</label><input type="text" class="form-input" id="m_booth_location" placeholder="Contoh: Mall Lt. 2"></div>
+                    <div class="form-group"><label class="form-label">Tipe</label><select class="form-select" id="m_booth_type"><option value="minuman">Minuman</option><option value="makanan">Makanan</option><option value="campuran">Campuran</option></select></div>
+                    <div class="form-group"><label class="form-label">Ikon</label><select class="form-select" id="m_booth_icon"><option value="fa-mug-hot">Kopi/Minuman</option><option value="fa-drumstick-bite">Ayam/Makanan</option><option value="fa-blender">Smoothie</option><option value="fa-glass-water">Es Teh</option><option value="fa-ice-cream">Dessert</option><option value="fa-utensils">Restoran</option></select></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="BoothModule.saveAdd()">Simpan</button></div>
+            `);
+        },
+        saveAdd() {
+            const name = document.getElementById('m_booth_name').value.trim();
+            const location = document.getElementById('m_booth_location').value.trim();
+            const type = document.getElementById('m_booth_type').value;
+            const icon = document.getElementById('m_booth_icon').value;
+            if (!name || !location) { showToast('Nama dan lokasi wajib diisi', 'warning'); return; }
+            DM.data.booths.push({ id: DM.nextId('booths'), name, location, type, status: 'active', icon });
+            DM.save(); closeModal(); App.render(); showToast('Booth berhasil ditambahkan');
+        },
+        openEdit(id) {
+            const booth = DM.getBooth(id);
+            if (!booth) return;
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Edit Booth</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Nama Booth</label><input type="text" class="form-input" id="m_booth_name" value="${booth.name}"></div>
+                    <div class="form-group"><label class="form-label">Lokasi</label><input type="text" class="form-input" id="m_booth_location" value="${booth.location}"></div>
+                    <div class="form-group"><label class="form-label">Tipe</label><select class="form-select" id="m_booth_type"><option value="minuman" ${booth.type==='minuman'?'selected':''}>Minuman</option><option value="makanan" ${booth.type==='makanan'?'selected':''}>Makanan</option><option value="campuran" ${booth.type==='campuran'?'selected':''}>Campuran</option></select></div>
+                    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="m_booth_status"><option value="active" ${booth.status==='active'?'selected':''}>Aktif</option><option value="inactive" ${booth.status==='inactive'?'selected':''}>Nonaktif</option></select></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="BoothModule.saveEdit(${id})">Simpan</button></div>
+            `);
+        },
+        saveEdit(id) {
+            const booth = DM.getBooth(id);
+            if (!booth) return;
+            booth.name = document.getElementById('m_booth_name').value.trim();
+            booth.location = document.getElementById('m_booth_location').value.trim();
+            booth.type = document.getElementById('m_booth_type').value;
+            booth.status = document.getElementById('m_booth_status').value;
+            DM.save(); closeModal(); App.render(); showToast('Booth berhasil diperbarui');
+        },
+        remove(id) {
+            if (!confirm('Hapus booth ini? Semua data terkait akan ikut terhapus.')) return;
+            DM.data.booths = DM.data.booths.filter(b => b.id !== id);
+            DM.data.employees = DM.data.employees.filter(e => e.booth_id !== id);
+            DM.data.inventory = DM.data.inventory.filter(i => i.booth_id !== id);
+            DM.data.sales = DM.data.sales.filter(s => s.booth_id !== id);
+            DM.data.menu_items = DM.data.menu_items.filter(m => m.booth_id !== id);
+            DM.save(); App.render(); showToast('Booth berhasil dihapus', 'info');
+        }
+    };
+
+    // ============================================
+    // MODULE: Karyawan CRUD
+    // ============================================
+    const KaryawanModule = {
+        openAdd() {
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Tambah Karyawan</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Nama Lengkap</label><input type="text" class="form-input" id="m_emp_name"></div>
+                    <div class="form-group"><label class="form-label">Booth</label><select class="form-select" id="m_emp_booth">${DM.data.booths.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}</select></div>
+                    <div class="form-group"><label class="form-label">Posisi</label><select class="form-select" id="m_emp_position"><option>Kasir</option><option>Barista</option><option>Koki</option><option>Server</option><option>Supervisor</option></select></div>
+                    <div class="form-group"><label class="form-label">Shift</label><select class="form-select" id="m_emp_shift"><option value="pagi">Pagi (06:00 - 14:00)</option><option value="siang">Siang (14:00 - 22:00)</option><option value="malam">Malam (22:00 - 06:00)</option></select></div>
+                    <div class="form-group"><label class="form-label">No. Telepon</label><input type="text" class="form-input" id="m_emp_phone" placeholder="08xxxxxxxxxx"></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="KaryawanModule.saveAdd()">Simpan</button></div>
+            `);
+        },
+        saveAdd() {
+            const name = document.getElementById('m_emp_name').value.trim();
+            const booth_id = parseInt(document.getElementById('m_emp_booth').value);
+            const position = document.getElementById('m_emp_position').value;
+            const shift = document.getElementById('m_emp_shift').value;
+            const phone = document.getElementById('m_emp_phone').value.trim();
+            if (!name) { showToast('Nama wajib diisi', 'warning'); return; }
+            DM.data.employees.push({ id: DM.nextId('employees'), name, booth_id, position, shift, phone, status: 'active' });
+            DM.save(); closeModal(); App.render(); showToast('Karyawan berhasil ditambahkan');
+        },
+        openEdit(id) {
+            const emp = DM.data.employees.find(e => e.id === id);
+            if (!emp) return;
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Edit Karyawan</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Nama Lengkap</label><input type="text" class="form-input" id="m_emp_name" value="${emp.name}"></div>
+                    <div class="form-group"><label class="form-label">Booth</label><select class="form-select" id="m_emp_booth">${DM.data.booths.map(b => `<option value="${b.id}" ${emp.booth_id===b.id?'selected':''}>${b.name}</option>`).join('')}</select></div>
+                    <div class="form-group"><label class="form-label">Posisi</label><select class="form-select" id="m_emp_position"><option ${emp.position==='Kasir'?'selected':''}>Kasir</option><option ${emp.position==='Barista'?'selected':''}>Barista</option><option ${emp.position==='Koki'?'selected':''}>Koki</option><option ${emp.position==='Server'?'selected':''}>Server</option><option ${emp.position==='Supervisor'?'selected':''}>Supervisor</option></select></div>
+                    <div class="form-group"><label class="form-label">Shift</label><select class="form-select" id="m_emp_shift"><option value="pagi" ${emp.shift==='pagi'?'selected':''}>Pagi (06:00 - 14:00)</option><option value="siang" ${emp.shift==='siang'?'selected':''}>Siang (14:00 - 22:00)</option><option value="malam" ${emp.shift==='malam'?'selected':''}>Malam (22:00 - 06:00)</option></select></div>
+                    <div class="form-group"><label class="form-label">No. Telepon</label><input type="text" class="form-input" id="m_emp_phone" value="${emp.phone}"></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="KaryawanModule.saveEdit(${id})">Simpan</button></div>
+            `);
+        },
+        saveEdit(id) {
+            const emp = DM.data.employees.find(e => e.id === id);
+            if (!emp) return;
+            emp.name = document.getElementById('m_emp_name').value.trim();
+            emp.booth_id = parseInt(document.getElementById('m_emp_booth').value);
+            emp.position = document.getElementById('m_emp_position').value;
+            emp.shift = document.getElementById('m_emp_shift').value;
+            emp.phone = document.getElementById('m_emp_phone').value.trim();
+            DM.save(); closeModal(); App.render(); showToast('Data karyawan berhasil diperbarui');
+        },
+        toggleStatus(id) {
+            const emp = DM.data.employees.find(e => e.id === id);
+            if (!emp) return;
+            emp.status = emp.status === 'active' ? 'inactive' : 'active';
+            DM.save(); App.render(); showToast(`Karyawan ${emp.status === 'active' ? 'diaktifkan' : 'dinonaktifkan'}`, emp.status === 'active' ? 'success' : 'warning');
+        }
+    };
+
+    // ============================================
+    // MODULE: Stok CRUD
+    // ============================================
+    const StokModule = {
+        openAdd() {
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Tambah Bahan Baku</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Nama Bahan</label><input type="text" class="form-input" id="m_stok_name"></div>
+                    <div class="form-group"><label class="form-label">Booth</label><select class="form-select" id="m_stok_booth">${DM.data.booths.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}</select></div>
+                    <div class="form-group"><label class="form-label">Kategori</label><select class="form-select" id="m_stok_cat"><option value="bahan_minuman">Bahan Minuman</option><option value="bahan_makanan">Bahan Makanan</option><option value="kemasan">Kemasan</option></select></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group"><label class="form-label">Stok Awal</label><input type="number" class="form-input" id="m_stok_stock" min="0" value="0"></div>
+                        <div class="form-group"><label class="form-label">Satuan</label><input type="text" class="form-input" id="m_stok_unit" placeholder="kg, liter, pack"></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group"><label class="form-label">Stok Minimum</label><input type="number" class="form-input" id="m_stok_min" min="0" value="5"></div>
+                        <div class="form-group"><label class="form-label">Harga per Satuan</label><input type="number" class="form-input" id="m_stok_price" min="0" value="0"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="StokModule.saveAdd()">Simpan</button></div>
+            `);
+        },
+        saveAdd() {
+            const name = document.getElementById('m_stok_name').value.trim();
+            const booth_id = parseInt(document.getElementById('m_stok_booth').value);
+            const category = document.getElementById('m_stok_cat').value;
+            const stock = parseInt(document.getElementById('m_stok_stock').value) || 0;
+            const unit = document.getElementById('m_stok_unit').value.trim();
+            const min_stock = parseInt(document.getElementById('m_stok_min').value) || 0;
+            const price_per_unit = parseInt(document.getElementById('m_stok_price').value) || 0;
+            if (!name || !unit) { showToast('Nama dan satuan wajib diisi', 'warning'); return; }
+            DM.data.inventory.push({ id: DM.nextId('inventory'), name, booth_id, category, stock, unit, min_stock, price_per_unit });
+            DM.save(); closeModal(); App.render(); showToast('Bahan baku berhasil ditambahkan');
+        },
+        openEdit(id) {
+            const item = DM.data.inventory.find(i => i.id === id);
+            if (!item) return;
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Edit Bahan Baku</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Nama Bahan</label><input type="text" class="form-input" id="m_stok_name" value="${item.name}"></div>
+                    <div class="form-group"><label class="form-label">Stok Saat Ini</label><input type="number" class="form-input" id="m_stok_stock" value="${item.stock}" min="0"></div>
+                    <div class="form-group"><label class="form-label">Stok Minimum</label><input type="number" class="form-input" id="m_stok_min" value="${item.min_stock}" min="0"></div>
+                    <div class="form-group"><label class="form-label">Harga per Satuan</label><input type="number" class="form-input" id="m_stok_price" value="${item.price_per_unit}" min="0"></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="StokModule.saveEdit(${id})">Simpan</button></div>
+            `);
+        },
+        saveEdit(id) {
+            const item = DM.data.inventory.find(i => i.id === id);
+            if (!item) return;
+            item.name = document.getElementById('m_stok_name').value.trim();
+            item.stock = parseInt(document.getElementById('m_stok_stock').value) || 0;
+            item.min_stock = parseInt(document.getElementById('m_stok_min').value) || 0;
+            item.price_per_unit = parseInt(document.getElementById('m_stok_price').value) || 0;
+            DM.save(); closeModal(); App.render(); showToast('Stok berhasil diperbarui');
+        },
+        openRestock(id) {
+            const item = DM.data.inventory.find(i => i.id === id);
+            if (!item) return;
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Restock: ${item.name}</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div style="margin-bottom:16px;padding:12px;background:#FAFAF9;border-radius:8px;">
+                        <div style="font-size:13px;color:var(--muted);">Stok saat ini</div>
+                        <div style="font-size:24px;font-weight:900;">${item.stock} ${item.unit}</div>
+                        <div style="font-size:12px;color:var(--muted);">Minimum: ${item.min_stock} ${item.unit}</div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Jumlah Restock</label><input type="number" class="form-input" id="m_restock_qty" min="1" placeholder="Masukkan jumlah" autofocus></div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="StokModule.saveRestock(${id})">Restock</button></div>
+            `);
+        },
+        saveRestock(id) {
+            const item = DM.data.inventory.find(i => i.id === id);
+            if (!item) return;
+            const qty = parseInt(document.getElementById('m_restock_qty').value);
+            if (!qty || qty <= 0) { showToast('Jumlah harus lebih dari 0', 'warning'); return; }
+            item.stock += qty;
+            DM.save(); closeModal(); App.render(); showToast(`Berhasil restock ${item.name} +${qty} ${item.unit}`);
+        },
+        remove(id) {
+            if (!confirm('Hapus bahan baku ini?')) return;
+            DM.data.inventory = DM.data.inventory.filter(i => i.id !== id);
+            DM.save(); App.render(); showToast('Bahan baku berhasil dihapus', 'info');
+        }
+    };
+
+    // ============================================
+    // MODULE: Penjualan CRUD
+    // ============================================
+    const SalesModule = {
+        openAdd() {
+            let selectedBoothId = null;
+            openModal(`
+                <div class="modal-header"><h3 style="font-weight:800;">Catat Penjualan</h3><button class="btn-icon btn-secondary" onclick="closeModal()"><i class="fas fa-times"></i></button></div>
+                <div class="modal-body">
+                    <div class="form-group"><label class="form-label">Booth</label><select class="form-select" id="m_sale_booth" onchange="SalesModule.loadMenu()">${DM.data.booths.filter(b=>b.status==='active').map(b => `<option value="${b.id}">${b.name}</option>`).join('')}</select></div>
+                    <div class="form-group"><label class="form-label">Metode Pembayaran</label><select class="form-select" id="m_sale_payment"><option value="tunai">Tunai</option><option value="digital">Digital (QRIS/Transfer)</option></select></div>
+                    <div class="form-group">
+                        <label class="form-label">Pilih Menu & Jumlah</label>
+                        <div id="sale_menu_container" style="max-height:240px;overflow-y:auto;">
+                            <p style="color:var(--muted);font-size:13px;">Pilih booth terlebih dahulu</p>
+                        </div>
+                    </div>
+                    <div id="sale_total_display" style="padding:12px;background:var(--accent-light);border-radius:8px;font-weight:800;font-size:18px;color:var(--accent);text-align:right;">
+                        Total: Rp 0
+                    </div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="SalesModule.saveAdd()">Simpan Penjualan</button></div>
+            `);
+            this.loadMenu();
+        },
+        loadMenu() {
+            const boothId = parseInt(document.getElementById('m_sale_booth').value);
+            const menu = DM.getMenuByBooth(boothId);
+            const container = document.getElementById('sale_menu_container');
+            if (menu.length === 0) {
+                container.innerHTML = '<p style="color:var(--muted);font-size:13px;">Belum ada menu di booth ini</p>';
+                return;
+            }
+            container.innerHTML = menu.map(m => `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+                    <div style="flex:1;">
+                        <div style="font-weight:600;font-size:14px;">${m.name}</div>
+                        <div style="font-size:12px;color:var(--accent);font-weight:700;">${DM.formatCurrency(m.price)}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <button class="btn-icon btn-secondary" style="width:28px;height:28px;font-size:12px;" onclick="SalesModule.changeQty(${m.id},-1)">-</button>
+                        <input type="number" id="sale_qty_${m.id}" value="0" min="0" style="width:40px;text-align:center;border:1px solid var(--border);border-radius:4px;font-size:14px;font-family:inherit;padding:4px;" onchange="SalesModule.updateTotal()" data-price="${m.price}" data-name="${m.name}">
+                        <button class="btn-icon btn-secondary" style="width:28px;height:28px;font-size:12px;" onclick="SalesModule.changeQty(${m.id},1)">+</button>
+                    </div>
+                </div>
+            `).join('');
+            this.updateTotal();
+        },
+        changeQty(menuId, delta) {
+            const input = document.getElementById(`sale_qty_${menuId}`);
+            if (!input) return;
+            let val = parseInt(input.value) || 0;
+            val = Math.max(0, val + delta);
+            input.value = val;
+            this.updateTotal();
+        },
+        updateTotal() {
+            let total = 0;
+            document.querySelectorAll('[id^="sale_qty_"]').forEach(input => {
+                const qty = parseInt(input.value) || 0;
+                const price = parseInt(input.dataset.price) || 0;
+                total += qty * price;
+            });
+            const display = document.getElementById('sale_total_display');
+            if (display) display.innerHTML = `Total: ${DM.formatCurrency(total)}`;
+        },
+        saveAdd() {
+            const boothId = parseInt(document.getElementById('m_sale_booth').value);
+            const payment = document.getElementById('m_sale_payment').value;
+            const items = [];
+            let total = 0;
+
+            document.querySelectorAll('[id^="sale_qty_"]').forEach(input => {
+                const qty = parseInt(input.value) || 0;
+                if (qty > 0) {
+                    const price = parseInt(input.dataset.price) || 0;
+                    const name = input.dataset.name;
+                    items.push({ menu_item_id: parseInt(input.id.split('_')[2]), name, qty, price, subtotal: qty * price });
+                    total += qty * price;
+                }
+            });
+
+            if (items.length === 0) { showToast('Pilih minimal 1 menu', 'warning'); return; }
+
+            const now = new Date();
+            DM.data.sales.push({
+                id: DM.nextId('sales'),
+                booth_id: boothId,
+                date: now.toISOString().split('T')[0],
+                items,
+                total,
+                payment,
+                created_at: now.toISOString()
+            });
+            DM.save(); closeModal(); App.render(); showToast(`Penjualan ${DM.formatCurrency(total)} berhasil dicatat`);
+        },
+        remove(id) {
+            if (!confirm('Hapus transaksi ini?')) return;
+            DM.data.sales = DM.data.sales.filter(s => s.id !== id);
+            DM.save(); App.render(); showToast('Transaksi dihapus', 'info');
+        }
+    };
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set tanggal hari ini
+        document.getElementById('todayDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+        // Inisialisasi data
+        DM.init();
+
+        // Navigasi sidebar
+        document.querySelectorAll('.sidebar-nav a').forEach(a => {
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
+                App.navigate(this.dataset.page);
+            });
+        });
+
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        if (window.innerWidth <= 1024) menuToggle.style.display = 'flex';
+        menuToggle.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+        window.addEventListener('resize', () => { menuToggle.style.display = window.innerWidth <= 1024 ? 'flex' : 'none'; });
+
+        // Render halaman awal
+        App.navigate('dashboard');
+    });
+    </script>
+</body>
+</html>

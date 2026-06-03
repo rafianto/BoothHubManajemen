@@ -1,0 +1,228 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_karyawan %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Lengkapi data karyawan{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+    <!-- Back Button -->
+    <a href="{% url 'boothapp:employee_list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;transition:color 0.2s;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+        <i class="fas fa-arrow-left"></i> Kembali ke Daftar Karyawan
+    </a>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-user-plus" style="color:var(--accent);font-size:15px;"></i>
+                </div>
+                <span>{{ title }}</span>
+            </div>
+        </div>
+        <div style="padding:24px;">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Error Messages -->
+                {% if form.errors %}
+                <div style="padding:12px 16px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:13px;margin-bottom:20px;">
+                    <i class="fas fa-exclamation-circle"></i> Terdapat kesalahan dalam formulir. Periksa kembali isian Anda.
+                </div>
+                {% endif %}
+
+                <!-- Nama Lengkap -->
+                <div class="form-group">
+                    <label class="form-label" for="id_name">
+                        Nama Lengkap <span style="color:var(--danger);">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Booth -->
+                <div class="form-group">
+                    <label class="form-label" for="id_booth">
+                        Booth <span style="color:var(--danger);">*</span>
+                    </label>
+                    {{ form.booth }}
+                    {% if form.booth.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.booth.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Posisi & Shift (2 kolom) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_position">
+                            Posisi <span style="color:var(--danger);">*</span>
+                        </label>
+                        {{ form.position }}
+                        {% if form.position.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                            {% for error in form.position.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_shift">
+                            Shift <span style="color:var(--danger);">*</span>
+                        </label>
+                        {{ form.shift }}
+                        {% if form.shift.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                            {% for error in form.shift.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- No. Telepon -->
+                <div class="form-group">
+                    <label class="form-label" for="id_phone">
+                        No. Telepon <span style="color:var(--danger);">*</span>
+                    </label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.phone.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;">Format: 08xxxxxxxxxx</div>
+                </div>
+
+                <!-- Status -->
+                <div class="form-group">
+                    <label class="form-label" for="id_status">Status</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.status.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Preview Kartu Karyawan -->
+                <div style="padding:20px;background:#FAFAF9;border-radius:12px;border:1px solid var(--border);margin-bottom:20px;">
+                    <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">
+                        <i class="fas fa-eye"></i> Preview Kartu Karyawan
+                    </div>
+                    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                        <!-- Avatar -->
+                        <div id="previewAvatar" style="width:56px;height:56px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:var(--accent);flex-shrink:0;border:3px solid var(--accent);">
+                            ?
+                        </div>
+                        <!-- Info -->
+                        <div style="flex:1;min-width:0;">
+                            <div id="previewName" style="font-weight:800;font-size:17px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Nama Karyawan</div>
+                            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                                <span id="previewPosition" class="badge badge-info">Posisi</span>
+                                <span id="previewShift" class="badge badge-success">Shift</span>
+                                <span id="previewStatus" class="badge badge-success">Aktif</span>
+                            </div>
+                            <div id="previewBooth" style="font-size:12px;color:var(--muted);margin-top:6px;">
+                                <i class="fas fa-store-alt"></i> Booth
+                            </div>
+                            <div id="previewPhone" style="font-size:12px;color:var(--muted);margin-top:2px;">
+                                <i class="fas fa-phone"></i> -
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--border);">
+                    <a href="{% url 'boothapp:employee_list' %}" class="btn btn-secondary" style="text-decoration:none;">Batal</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const nameInput = document.getElementById('id_name');
+    const boothSelect = document.getElementById('id_booth');
+    const positionSelect = document.getElementById('id_position');
+    const shiftSelect = document.getElementById('id_shift');
+    const phoneInput = document.getElementById('id_phone');
+    const statusSelect = document.getElementById('id_status');
+
+    const shiftLabels = {
+        'pagi': 'Pagi (06-14)',
+        'siang': 'Siang (14-22)',
+        'malam': 'Malam (22-06)'
+    };
+
+    function updatePreview() {
+        // Avatar initial
+        const name = nameInput.value.trim();
+        const initial = name ? name.charAt(0).toUpperCase() : '?';
+        document.getElementById('previewAvatar').textContent = initial;
+        document.getElementById('previewName').textContent = name || 'Nama Karyawan';
+
+        // Booth
+        const boothText = boothSelect.options[boothSelect.selectedIndex]?.text || 'Booth';
+        document.getElementById('previewBooth').innerHTML = '<i class="fas fa-store-alt"></i> ' + boothText;
+
+        // Position
+        const posText = positionSelect.value || 'Posisi';
+        document.getElementById('previewPosition').textContent = posText;
+
+        // Shift
+        const shiftVal = shiftSelect.value;
+        document.getElementById('previewShift').textContent = shiftLabels[shiftVal] || 'Shift';
+        if (shiftVal === 'pagi') {
+            document.getElementById('previewShift').className = 'badge badge-success';
+        } else if (shiftVal === 'siang') {
+            document.getElementById('previewShift').className = 'badge badge-info';
+        } else {
+            document.getElementById('previewShift').className = 'badge badge-muted';
+        }
+
+        // Phone
+        const phone = phoneInput.value.trim();
+        document.getElementById('previewPhone').innerHTML = '<i class="fas fa-phone"></i> ' + (phone || '-');
+
+        // Status
+        const status = statusSelect.value;
+        const statusEl = document.getElementById('previewStatus');
+        if (status === 'active') {
+            statusEl.textContent = 'Aktif';
+            statusEl.className = 'badge badge-success';
+        } else {
+            statusEl.textContent = 'Nonaktif';
+            statusEl.className = 'badge badge-muted';
+        }
+    }
+
+    nameInput.addEventListener('input', updatePreview);
+    boothSelect.addEventListener('change', updatePreview);
+    positionSelect.addEventListener('change', updatePreview);
+    shiftSelect.addEventListener('change', updatePreview);
+    phoneInput.addEventListener('input', updatePreview);
+    statusSelect.addEventListener('change', updatePreview);
+
+    // Init
+    updatePreview();
+
+    // Styling Django form fields
+    document.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"], select, textarea').forEach(el => {
+        if (!el.classList.contains('form-input') && !el.classList.contains('form-select')) {
+            el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-input');
+        }
+    });
+</script>
+{% endblock %}

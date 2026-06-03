@@ -1,0 +1,181 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_stok %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Isi data bahan baku dengan lengkap{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+    <!-- Back Button -->
+    <a href="{% url 'boothapp:inventory_list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;transition:color 0.2s;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+        <i class="fas fa-arrow-left"></i> Kembali ke Daftar Stok
+    </a>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-boxes-stacked" style="color:var(--accent);font-size:15px;"></i>
+                </div>
+                <span>{{ title }}</span>
+            </div>
+        </div>
+        <div style="padding:24px;">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Error Messages -->
+                {% if form.errors %}
+                <div style="padding:12px 16px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:13px;margin-bottom:20px;">
+                    <i class="fas fa-exclamation-circle"></i> Terdapat kesalahan dalam formulir. Periksa kembali isian Anda.
+                </div>
+                {% endif %}
+
+                <!-- Nama Bahan -->
+                <div class="form-group">
+                    <label class="form-label" for="id_name">
+                        Nama Bahan <span style="color:var(--danger);">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.name.errors %}{{ e }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Booth & Kategori (2 kolom) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_booth">Booth <span style="color:var(--danger);">*</span></label>
+                        {{ form.booth }}
+                        {% if form.booth.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.booth.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_category">Kategori <span style="color:var(--danger);">*</span></label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.category.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Stok & Satuan (2 kolom) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_stock">Stok Awal <span style="color:var(--danger);">*</span></label>
+                        {{ form.stock }}
+                        {% if form.stock.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.stock.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_unit">Satuan <span style="color:var(--danger);">*</span></label>
+                        {{ form.unit }}
+                        {% if form.unit.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.unit.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Contoh: kg, liter, pack, box, rim</div>
+                    </div>
+                </div>
+
+                <!-- Min Stok & Harga (2 kolom) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_min_stock">Stok Minimum <span style="color:var(--danger);">*</span></label>
+                        {{ form.min_stock }}
+                        {% if form.min_stock.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.min_stock.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Batas stok untuk peringatan</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_price_per_unit">Harga per Satuan</label>
+                        {{ form.price_per_unit }}
+                        {% if form.price_per_unit.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">{% for e in form.price_per_unit.errors %}{{ e }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Preview Nilai Stok -->
+                <div id="stockPreview" style="padding:16px;background:#FAFAF9;border-radius:10px;border:1px solid var(--border);margin-bottom:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Estimasi Nilai Stok</div>
+                            <div id="totalValue" style="font-size:24px;font-weight:900;color:var(--accent);margin-top:2px;">Rp 0</div>
+                        </div>
+                        <div id="statusPreview" style="text-align:right;">
+                            <div style="font-size:11px;color:var(--muted);font-weight:600;">Status</div>
+                            <span id="statusBadge" class="badge badge-success">Aman</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--border);">
+                    <a href="{% url 'boothapp:inventory_list' %}" class="btn btn-secondary" style="text-decoration:none;">Batal</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const stockInput = document.getElementById('id_stock');
+    const minStockInput = document.getElementById('id_min_stock');
+    const priceInput = document.getElementById('id_price_per_unit');
+
+    function formatRupiah(num) {
+        return 'Rp ' + num.toLocaleString('id-ID');
+    }
+
+    function updatePreview() {
+        const stock = parseInt(stockInput.value) || 0;
+        const minStock = parseInt(minStockInput.value) || 0;
+        const price = parseInt(priceInput.value) || 0;
+
+        // Total value
+        const total = stock * price;
+        document.getElementById('totalValue').textContent = formatRupiah(total);
+
+        // Status
+        const badge = document.getElementById('statusBadge');
+        const isCritical = minStock > 0 && stock <= minStock * 0.5;
+        const isLow = minStock > 0 && stock <= minStock;
+
+        if (stock === 0 && minStock === 0) {
+            badge.textContent = '-';
+            badge.className = 'badge badge-muted';
+        } else if (isCritical) {
+            badge.textContent = 'Kritis';
+            badge.className = 'badge badge-danger';
+        } else if (isLow) {
+            badge.textContent = 'Rendah';
+            badge.className = 'badge badge-warning';
+        } else {
+            badge.textContent = 'Aman';
+            badge.className = 'badge badge-success';
+        }
+    }
+
+    stockInput.addEventListener('input', updatePreview);
+    minStockInput.addEventListener('input', updatePreview);
+    priceInput.addEventListener('input', updatePreview);
+    updatePreview();
+
+    // Styling Django form fields
+    document.querySelectorAll('input[type="text"], input[type="number"], select, textarea').forEach(el => {
+        if (!el.classList.contains('form-input') && !el.classList.contains('form-select')) {
+            el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-input');
+        }
+    });
+</script>
+{% endblock %}

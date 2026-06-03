@@ -1,0 +1,167 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_biaya %}active{% endblock %}
+{% block page_title %}Biaya Operasional{% endblock %}
+{% block page_subtitle %}Kelola pengeluaran karyawan, sewa, investasi, dan operasional harian{% endblock %}
+
+{% block content %}
+<!-- Top Bar -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <select class="form-select" style="width:auto;min-width:200px;" id="boothFilter" onchange="applyFilter()">
+            <option value="all" {% if selected_booth == 'all' %}selected{% endif %}>Semua Booth</option>
+            {% for booth in booths %}
+            <option value="{{ booth.id }}" {% if selected_booth == booth.id|stringformat:"s" %}selected{% endif %}>{{ booth.name }}</option>
+            {% endfor %}
+        </select>
+        <select class="form-select" style="width:auto;" id="catFilter" onchange="applyFilter()">
+            <option value="all" {% if selected_category == 'all' %}selected{% endif %}>Semua Kategori</option>
+            <option value="karyawan" {% if selected_category == 'karyawan' %}selected{% endif %}>Biaya Karyawan</option>
+            <option value="sewa" {% if selected_category == 'sewa' %}selected{% endif %}>Sewa Tempat</option>
+            <option value="investasi" {% if selected_category == 'investasi' %}selected{% endif %}>Investasi Awal</option>
+            <option value="operasional" {% if selected_category == 'operasional' %}selected{% endif %}>Operasional Harian</option>
+        </select>
+        <span style="font-size:14px;color:var(--muted);"><i class="fas fa-money-bill-wave" style="color:var(--accent);"></i> {{ expenses|length }} transaksi</span>
+    </div>
+    <a href="{% url 'boothapp:expense_create' %}" class="btn btn-primary" style="text-decoration:none;">
+        <i class="fas fa-plus"></i> Catat Biaya
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;border-top:3px solid var(--danger);">
+        <div style="width:40px;height:40px;border-radius:10px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-coins" style="color:var(--danger);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Total Pengeluaran</div>
+            <div style="font-size:20px;font-weight:900;color:var(--danger);">{{ total_expense_fmt }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;border-top:3px solid var(--info);">
+        <div style="width:40px;height:40px;border-radius:10px;background:#CFFAFE;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-users" style="color:var(--info);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Karyawan</div>
+            <div style="font-size:20px;font-weight:900;">{{ karyawan_expense_fmt }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;border-top:3px solid #9333EA;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#F3E8FF;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-building" style="color:#9333EA;font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Sewa Tempat</div>
+            <div style="font-size:20px;font-weight:900;">{{ sewa_expense_fmt }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;border-top:3px solid var(--accent);">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-chart-line" style="color:var(--accent);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Investasi Awal</div>
+            <div style="font-size:20px;font-weight:900;">{{ investasi_expense_fmt }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;border-top:3px solid var(--success);">
+        <div style="width:40px;height:40px;border-radius:10px;background:#DCFCE7;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-receipt" style="color:var(--success);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Operasional Harian</div>
+            <div style="font-size:20px;font-weight:900;">{{ operasional_expense_fmt }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabel Biaya -->
+<div class="card">
+    <div class="card-header">
+        <span><i class="fas fa-list" style="margin-right:8px;color:var(--accent);"></i>Riwayat Pengeluaran</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Booth</th>
+                    <th>Kategori</th>
+                    <th>Deskripsi</th>
+                    <th style="text-align:right;">Jumlah</th>
+                    <th style="text-align:center;">Tipe</th>
+                    <th style="width:80px;text-align:right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td style="font-weight:600;font-size:13px;">{{ expense.date|date:"d M Y" }}</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:24px;height:24px;border-radius:6px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                                <i class="fas {{ expense.booth.icon }}" style="color:var(--accent);font-size:10px;"></i>
+                            </div>
+                            <span style="font-size:13px;">{{ expense.booth.name }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if expense.category == 'karyawan' %}
+                        <span class="badge badge-info"><i class="fas fa-users" style="margin-right:3px;"></i>Karyawan</span>
+                        {% elif expense.category == 'sewa' %}
+                        <span class="badge" style="background:#F3E8FF;color:#9333EA;"><i class="fas fa-building" style="margin-right:3px;"></i>Sewa</span>
+                        {% elif expense.category == 'investasi' %}
+                        <span class="badge" style="background:var(--accent-light);color:var(--accent);"><i class="fas fa-chart-line" style="margin-right:3px;"></i>Investasi</span>
+                        {% else %}
+                        <span class="badge badge-success"><i class="fas fa-receipt" style="margin-right:3px;"></i>Operasional</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ expense.description }}</td>
+                    <td style="text-align:right;font-weight:800;font-size:14px;color:var(--danger);">- {{ expense.amount_fmt }}</td>
+                    <td style="text-align:center;">
+                        {% if expense.is_recurring %}
+                        <span class="badge badge-warning"><i class="fas fa-sync-alt" style="margin-right:3px;"></i>Bulanan</span>
+                        {% else %}
+                        <span class="badge badge-muted">Sekali</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;white-space:nowrap;">
+                        <a href="{% url 'boothapp:expense_update' expense.pk %}" class="btn btn-secondary btn-sm" style="text-decoration:none;" title="Edit"><i class="fas fa-pen"></i></a>
+                        <form method="post" action="{% url 'boothapp:expense_delete' expense.pk %}" style="display:inline;" onsubmit="return confirm('Hapus biaya ini?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:48px 20px;">
+                        <div style="width:64px;height:64px;border-radius:50%;background:#FEE2E2;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <i class="fas fa-money-bill-wave" style="font-size:24px;color:var(--danger);"></i>
+                        </div>
+                        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Belum Ada Catatan Biaya</div>
+                        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Mulai catat pengeluaran booth Anda</div>
+                        <a href="{% url 'boothapp:expense_create' %}" class="btn btn-primary" style="text-decoration:none;"><i class="fas fa-plus"></i> Catat Biaya Pertama</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilter() {
+    const booth = document.getElementById('boothFilter').value;
+    const cat = document.getElementById('catFilter').value;
+    const url = new URL(window.location);
+    if (booth === 'all') url.searchParams.delete('booth'); else url.searchParams.set('booth', booth);
+    if (cat === 'all') url.searchParams.delete('category'); else url.searchParams.set('category', cat);
+    window.location = url;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_stok %}active{% endblock %}
+{% block page_title %}Stok Bahan Baku{% endblock %}
+{% block page_subtitle %}Pantau dan kelola persediaan bahan{% endblock %}
+
+{% block content %}
+<!-- Alert Stok Rendah -->
+{% if low_count > 0 %}
+<div class="alert-strip danger" style="margin-bottom:20px;">
+    <i class="fas fa-exclamation-triangle"></i> 
+    <strong>{{ low_count }} bahan</strong> di bawah batas minimum stok dari {{ items|length }} total bahan. Segera lakukan restock!
+</div>
+{% endif %}
+
+<!-- Top Bar: Filter & Tambah -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <!-- Filter Booth -->
+        <select class="form-select" style="width:auto;min-width:200px;" id="boothFilter" onchange="applyFilter()">
+            <option value="all" {% if selected_booth == 'all' %}selected{% endif %}>Semua Booth</option>
+            {% for booth in booths %}
+            <option value="{{ booth.id }}" {% if selected_booth == booth.id|stringformat:"s" %}selected{% endif %}>
+                {{ booth.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <!-- Filter Kategori -->
+        <select class="form-select" style="width:auto;" id="categoryFilter" onchange="applyFilter()">
+            <option value="all" {% if selected_category == 'all' %}selected{% endif %}>Semua Kategori</option>
+            <option value="bahan_minuman" {% if selected_category == 'bahan_minuman' %}selected{% endif %}>Bahan Minuman</option>
+            <option value="bahan_makanan" {% if selected_category == 'bahan_makanan' %}selected{% endif %}>Bahan Makanan</option>
+            <option value="kemasan" {% if selected_category == 'kemasan' %}selected{% endif %}>Kemasan</option>
+        </select>
+        <span style="font-size:14px;color:var(--muted);font-weight:500;">
+            <i class="fas fa-boxes-stacked" style="color:var(--accent);margin-right:4px;"></i>
+            {{ items|length }} item
+        </span>
+    </div>
+    <a href="{% url 'boothapp:inventory_create' %}" class="btn btn-primary" style="text-decoration:none;">
+        <i class="fas fa-plus"></i> Tambah Bahan
+    </a>
+</div>
+
+<!-- Tabel Stok -->
+<div class="card">
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Bahan</th>
+                    <th>Booth</th>
+                    <th>Kategori</th>
+                    <th style="text-align:center;">Stok</th>
+                    <th style="width:120px;">Level</th>
+                    <th style="text-align:center;">Min</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr id="row-{{ item.id }}" style="{% if item.is_critical %}background:#FEF2F2;{% endif %}">
+                    <!-- Nama Bahan -->
+                    <td>
+                        <div style="font-weight:700;font-size:14px;">{{ item.name }}</div>
+                        <div style="font-size:11px;color:var(--muted);">{{ item.price_per_unit|floatformat:0 }} / {{ item.unit }}</div>
+                    </td>
+                    <!-- Booth -->
+                    <td>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:24px;height:24px;border-radius:6px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                                <i class="fas {{ item.booth.icon }}" style="color:var(--accent);font-size:10px;"></i>
+                            </div>
+                            <span style="font-size:13px;">{{ item.booth.name }}</span>
+                        </div>
+                    </td>
+                    <!-- Kategori -->
+                    <td>
+                        <span class="badge badge-info">
+                            {% if item.category == 'bahan_minuman' %}<i class="fas fa-mug-hot" style="margin-right:4px;"></i>Minuman
+                            {% elif item.category == 'bahan_makanan' %}<i class="fas fa-drumstick-bite" style="margin-right:4px;"></i>Makanan
+                            {% else %}<i class="fas fa-box" style="margin-right:4px;"></i>Kemasan{% endif %}
+                        </span>
+                    </td>
+                    <!-- Stok -->
+                    <td style="text-align:center;">
+                        <span style="font-weight:800;font-size:16px;color:{% if item.is_critical %}var(--danger){% elif item.is_low %}var(--warning){% else %}var(--fg){% endif %};">
+                            {{ item.stock }}
+                        </span> 
+                        <span style="font-size:12px;color:var(--muted);">{{ item.unit }}</span>
+                    </td>
+                    <!-- Level Bar -->
+                    <td>
+                        <div class="stock-bar" style="position:relative;">
+                            <div class="stock-bar-fill" id="bar-{{ item.id }}" style="width:0%;background:{% if item.is_critical %}var(--danger){% elif item.is_low %}var(--warning){% else %}var(--success){% endif %};"></div>
+                        </div>
+                        <div style="font-size:10px;color:var(--muted);margin-top:2px;text-align:right;" id="pct-{{ item.id }}"></div>
+                    </td>
+                    <!-- Min Stock -->
+                    <td style="text-align:center;">{{ item.min_stock }} {{ item.unit }}</td>
+                    <!-- Status -->
+                    <td>
+                        {% if item.is_critical %}
+                        <span class="badge badge-danger"><i class="fas fa-exclamation-circle" style="margin-right:3px;"></i>Kritis</span>
+                        {% elif item.is_low %}
+                        <span class="badge badge-warning"><i class="fas fa-exclamation-triangle" style="margin-right:3px;"></i>Rendah</span>
+                        {% else %}
+                        <span class="badge badge-success"><i class="fas fa-check-circle" style="margin-right:3px;"></i>Aman</span>
+                        {% endif %}
+                    </td>
+                    <!-- Aksi -->
+                    <td style="text-align:right;white-space:nowrap;">
+                        <a href="{% url 'boothapp:inventory_restock' item.pk %}" class="btn btn-primary btn-sm" style="text-decoration:none;" title="Restock">
+                            <i class="fas fa-plus-circle"></i>
+                        </a>
+                        <a href="{% url 'boothapp:inventory_update' item.pk %}" class="btn btn-secondary btn-sm" style="text-decoration:none;" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </a>
+                        <form method="post" action="{% url 'boothapp:inventory_delete' item.pk %}" style="display:inline;" onsubmit="return confirm('Hapus bahan {{ item.name }}?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center;padding:48px 20px;">
+                        <div style="width:64px;height:64px;border-radius:50%;background:var(--accent-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <i class="fas fa-boxes-stacked" style="font-size:24px;color:var(--accent);"></i>
+                        </div>
+                        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Belum Ada Bahan Baku</div>
+                        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Mulai catat persediaan bahan booth Anda</div>
+                        <a href="{% url 'boothapp:inventory_create' %}" class="btn btn-primary" style="text-decoration:none;">
+                            <i class="fas fa-plus"></i> Tambah Bahan Pertama
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filter redirect
+function applyFilter() {
+    const booth = document.getElementById('boothFilter').value;
+    const category = document.getElementById('categoryFilter').value;
+    const url = new URL(window.location);
+    
+    if (booth === 'all') { url.searchParams.delete('booth'); } 
+    else { url.searchParams.set('booth', booth); }
+    
+    if (category === 'all') { url.searchParams.delete('category'); } 
+    else { url.searchParams.set('category', category); }
+    
+    window.location = url;
+}
+
+// Animasi stock bar
+document.addEventListener('DOMContentLoaded', function() {
+    {% for item in items %}
+    (function() {
+        const bar = document.getElementById('bar-{{ item.id }}');
+        const pct = document.getElementById('pct-{{ item.id }}');
+        if (!bar) return;
+        
+        // Hitung persentase (stok / 3x min_stock), maks 100%
+        const minStock = Math.max({{ item.min_stock }}, 1);
+        const currentStock = {{ item.stock }};
+        const percentage = Math.min((currentStock / (minStock * 3)) * 100, 100);
+        
+        // Animasi dengan delay
+        setTimeout(function() {
+            bar.style.width = percentage + '%';
+            if (pct) pct.textContent = Math.round(percentage) + '%';
+        }, 100 + {{ forloop.counter }} * 50);
+    })();
+    {% endfor %}
+});
+</script>
+{% endblock %}

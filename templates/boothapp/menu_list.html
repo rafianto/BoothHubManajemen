@@ -1,0 +1,210 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_menu %}active{% endblock %}
+{% block page_title %}Menu{% endblock %}
+{% block page_subtitle %}Kelola daftar menu setiap booth{% endblock %}
+
+{% block content %}
+<!-- Top Bar: Filter & Tambah -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <!-- Filter Booth -->
+        <select class="form-select" style="width:auto;min-width:220px;" id="boothFilter" onchange="filterByBooth()">
+            <option value="all" {% if selected_booth == 'all' %}selected{% endif %}>Semua Booth</option>
+            {% for booth in booths %}
+            <option value="{{ booth.id }}" {% if selected_booth == booth.id|stringformat:"s" %}selected{% endif %}>
+                {{ booth.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <!-- Filter Kategori -->
+        <select class="form-select" style="width:auto;" id="catFilter" onchange="filterByBooth()">
+            <option value="all">Semua Kategori</option>
+            <option value="minuman">Minuman</option>
+            <option value="makanan">Makanan</option>
+        </select>
+        <span style="font-size:14px;color:var(--muted);font-weight:500;">
+            <i class="fas fa-utensils" style="color:var(--accent);margin-right:4px;"></i>
+            {{ items|length }} menu
+        </span>
+    </div>
+    <a href="{% url 'boothapp:menu_create' %}" class="btn btn-primary" style="text-decoration:none;">
+        <i class="fas fa-plus"></i> Tambah Menu
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-utensils" style="color:var(--accent);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Total Menu</div>
+            <div style="font-size:22px;font-weight:900;">{{ items|length }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#CFFAFE;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-mug-hot" style="color:var(--info);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Minuman</div>
+            <div style="font-size:22px;font-weight:900;">{{ drink_count|default:"0" }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-drumstick-bite" style="color:#D97706;font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Makanan</div>
+            <div style="font-size:22px;font-weight:900;">{{ food_count|default:"0" }}</div>
+        </div>
+    </div>
+    <div style="padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:10px;background:#DCFCE7;display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-check-circle" style="color:var(--success);font-size:16px;"></i>
+        </div>
+        <div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">Tersedia</div>
+            <div style="font-size:22px;font-weight:900;">{{ available_count|default:"0" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Group by Booth -->
+{% regroup items by booth as booth_menu_list %}
+
+{% for booth_group in booth_menu_list %}
+<div class="card" style="margin-bottom:20px;">
+    <!-- Booth Header -->
+    <div class="card-header" style="background:#FAFAF9;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                <i class="fas {{ booth_group.grouper.icon }}" style="color:var(--accent);font-size:15px;"></i>
+            </div>
+            <div>
+                <div style="font-weight:800;font-size:16px;">{{ booth_group.grouper.name }}</div>
+                <div style="font-size:11px;color:var(--muted);font-weight:400;">{{ booth_group.grouper.location }} &bull; {{ booth_group.list|length }} menu</div>
+            </div>
+        </div>
+        <a href="{% url 'boothapp:menu_create' %}?booth={{ booth_group.grouper.id }}" class="btn btn-primary btn-sm" style="text-decoration:none;">
+            <i class="fas fa-plus"></i> Tambah
+        </a>
+    </div>
+
+    <!-- Menu Grid -->
+    <div style="padding:16px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+            {% for menu in booth_group.list %}
+            <div class="menu-card" id="menu-{{ menu.id }}" style="background:white;border:1px solid var(--border);border-radius:12px;padding:16px;transition:all 0.2s;position:relative;overflow:hidden;{% if not menu.is_available %}opacity:0.6;{% endif %}"
+                 onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';this.style.borderColor='var(--accent)'"
+                 onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
+
+                <!-- Top Ribbon: Kategori -->
+                <div style="position:absolute;top:0;right:0;">
+                    {% if menu.category == 'minuman' %}
+                    <div style="background:var(--info);color:white;font-size:10px;font-weight:700;padding:4px 10px;border-radius:0 12px 0 8px;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="fas fa-mug-hot" style="margin-right:3px;"></i>Minuman
+                    </div>
+                    {% else %}
+                    <div style="background:#D97706;color:white;font-size:10px;font-weight:700;padding:4px 10px;border-radius:0 12px 0 8px;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="fas fa-drumstick-bite" style="margin-right:3px;"></i>Makanan
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Menu Info -->
+                <div style="margin-top:8px;">
+                    <div style="font-weight:800;font-size:15px;margin-bottom:6px;padding-right:70px;">{{ menu.name }}</div>
+                    <div style="font-size:22px;font-weight:900;color:var(--accent);margin-bottom:10px;">
+                        {{ menu.price_fmt }}
+                    </div>
+                </div>
+
+                <!-- Status & Actions -->
+                <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border);">
+                    <span class="badge {% if menu.is_available %}badge-success{% else %}badge-muted{% endif %}">
+                        {% if menu.is_available %}<i class="fas fa-check-circle" style="margin-right:3px;"></i>Tersedia{% else %}<i class="fas fa-times-circle" style="margin-right:3px;"></i>Habis{% endif %}
+                    </span>
+                    <div style="display:flex;gap:4px;">
+                        <!-- Toggle Availability -->
+                        <form method="post" action="{% url 'boothapp:menu_toggle' menu.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm" title="{% if menu.is_available %}Tandai Habis{% else %}Tandai Tersedia{% endif %}"
+                                    onclick="return confirm('{% if menu.is_available %}Tandai {{ menu.name }} habis?{% else %}Tandai {{ menu.name }} tersedia?{% endif %}');">
+                                {% if menu.is_available %}
+                                <i class="fas fa-eye-slash"></i>
+                                {% else %}
+                                <i class="fas fa-eye"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                        <!-- Edit -->
+                        <a href="{% url 'boothapp:menu_update' menu.pk %}" class="btn btn-secondary btn-sm" style="text-decoration:none;" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </a>
+                        <!-- Delete -->
+                        <form method="post" action="{% url 'boothapp:menu_delete' menu.pk %}" style="display:inline;" onsubmit="return confirm('Hapus menu {{ menu.name }}?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% empty %}
+<!-- Empty State -->
+<div class="card">
+    <div style="text-align:center;padding:60px 20px;">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--accent-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <i class="fas fa-utensils" style="font-size:32px;color:var(--accent);"></i>
+        </div>
+        <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Belum Ada Menu</h3>
+        <p style="color:var(--muted);margin-bottom:24px;font-size:14px;">Tambahkan menu untuk booth Anda</p>
+        <a href="{% url 'boothapp:menu_create' %}" class="btn btn-primary" style="text-decoration:none;">
+            <i class="fas fa-plus"></i> Tambah Menu Pertama
+        </a>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterByBooth() {
+    const booth = document.getElementById('boothFilter').value;
+    const cat = document.getElementById('catFilter').value;
+    const url = new URL(window.location.origin + '{% url "boothapp:menu_list" %}');
+    
+    if (booth !== 'all') url.searchParams.set('booth', booth);
+    if (cat !== 'all') url.searchParams.set('category', cat);
+    
+    window.location = url;
+}
+
+// Animate menu cards on load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.menu-card').forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(12px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = card.style.opacity === '0' ? '' : '';
+            card.style.transform = '';
+            // Re-apply opacity based on availability
+            const isUnavailable = card.querySelector('.badge-muted');
+            if (isUnavailable && isUnavailable.textContent.includes('Habis')) {
+                card.style.opacity = '0.6';
+            }
+        }, 50 + i * 60);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_booth %}active{% endblock %}
+{% block page_title %}Booth{% endblock %}
+{% block page_subtitle %}Kelola semua booth Anda{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div style="font-size:14px;color:var(--muted);font-weight:500;">
+        <i class="fas fa-store-alt" style="color:var(--accent);"></i> 
+        {{ booths|length }} booth terdaftar
+    </div>
+    <a href="{% url 'boothapp:booth_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Tambah Booth
+    </a>
+</div>
+
+<!-- Booth Cards Grid -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;">
+    {% for booth in booths %}
+    <div class="card" style="transition:transform 0.2s,box-shadow 0.2s;">
+        <div style="padding:24px;">
+            <!-- Header: Icon + Name + Actions -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+                <div style="display:flex;gap:14px;align-items:center;">
+                    <div style="width:52px;height:52px;border-radius:14px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fas {{ booth.icon }}" style="color:var(--accent);font-size:22px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:800;font-size:17px;line-height:1.2;">{{ booth.name }}</div>
+                        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                            <i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>{{ booth.location }}
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                    <a href="{% url 'boothapp:booth_update' booth.pk %}" class="btn-icon btn-secondary btn-sm" title="Edit" style="text-decoration:none;">
+                        <i class="fas fa-pen" style="font-size:11px;"></i>
+                    </a>
+                    <form method="post" action="{% url 'boothapp:booth_delete' booth.pk %}" style="display:inline;" 
+                          onsubmit="return confirm('Hapus booth {{ booth.name }}? Semua data terkait akan ikut terhapus.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-icon btn-danger btn-sm" title="Hapus">
+                            <i class="fas fa-trash" style="font-size:11px;"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Badges -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+                <span class="badge {% if booth.status == 'active' %}badge-success{% else %}badge-muted{% endif %}">
+                    {% if booth.status == 'active' %}<i class="fas fa-circle" style="font-size:6px;vertical-align:middle;margin-right:4px;"></i>Aktif{% else %}<i class="fas fa-circle" style="font-size:6px;vertical-align:middle;margin-right:4px;"></i>Nonaktif{% endif %}
+                </span>
+                <span class="badge badge-info">
+                    {% if booth.booth_type == 'minuman' %}<i class="fas fa-mug-hot" style="margin-right:4px;"></i>Minuman
+                    {% elif booth.booth_type == 'makanan' %}<i class="fas fa-drumstick-bite" style="margin-right:4px;"></i>Makanan
+                    {% else %}<i class="fas fa-blender" style="margin-right:4px;"></i>Campuran{% endif %}
+                </span>
+            </div>
+
+            <!-- Stats Grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;text-align:center;background:#FAFAF9;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+                {% with emp_count=booth.employees.count menu_count=booth.menu_items.count low_count=booth.inventory.all %}
+                <div style="padding:14px 8px;border-right:1px solid var(--border);">
+                    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Karyawan</div>
+                    <div style="font-weight:900;font-size:22px;margin-top:2px;">{{ booth.employees.count }}</div>
+                </div>
+                <div style="padding:14px 8px;border-right:1px solid var(--border);">
+                    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Menu</div>
+                    <div style="font-weight:900;font-size:22px;margin-top:2px;">{{ booth.menu_items.count }}</div>
+                </div>
+                <div style="padding:14px 8px;">
+                    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Stok</div>
+                    <div style="font-weight:900;font-size:22px;margin-top:2px;">{{ booth.inventory.count }}</div>
+                </div>
+                {% endwith %}
+            </div>
+
+            <!-- Low Stock Warning -->
+            {% with low_items=booth.inventory.all %}
+            {% for item in low_items %}
+                {% if item.is_low %}
+                {% if forloop.first %}
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                    <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px;">
+                        <i class="fas fa-exclamation-triangle"></i> Stok Rendah
+                    </div>
+                {% endif %}
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;">
+                        <span style="color:#44403C;font-weight:500;">{{ item.name }}</span>
+                        <span style="color:var(--danger);font-weight:700;">{{ item.stock }}/{{ item.min_stock }} {{ item.unit }}</span>
+                    </div>
+                {% if forloop.last %}
+                </div>
+                {% endif %}
+                {% endif %}
+            {% endfor %}
+            {% endwith %}
+
+            <!-- Footer: Revenue Hari Ini -->
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;color:var(--muted);font-weight:500;">
+                    <i class="fas fa-calendar-day"></i> Dibuat {{ booth.created_at|date:"d M Y" }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="grid-column:1/-1;text-align:center;padding:60px 20px;">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--accent-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;">
+            <i class="fas fa-store-alt" style="font-size:32px;color:var(--accent);"></i>
+        </div>
+        <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Belum Ada Booth</h3>
+        <p style="color:var(--muted);margin-bottom:24px;font-size:14px;">Mulai dengan menambahkan booth pertama Anda</p>
+        <a href="{% url 'boothapp:booth_create' %}" class="btn btn-primary" style="text-decoration:none;">
+            <i class="fas fa-plus"></i> Tambah Booth Pertama
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

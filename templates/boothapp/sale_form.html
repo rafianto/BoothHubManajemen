@@ -1,0 +1,244 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_penjualan %}active{% endblock %}
+{% block page_title %}Catat Penjualan{% endblock %}
+{% block page_subtitle %}Pilih booth, menu, dan metode pembayaran{% endblock %}
+
+{% block content %}
+<form method="post" id="posForm" novalidate>
+    {% csrf_token %}
+    
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;">
+        
+        <!-- KOLOM KIRI: Pilihan Menu -->
+        <div>
+            <!-- Booth & Payment Selector -->
+            <div class="card" style="margin-bottom:16px;">
+                <div style="padding:16px 20px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:200px;">
+                        <label class="form-label" for="posBooth">Booth <span style="color:var(--danger);">*</span></label>
+                        <select name="booth" id="posBooth" class="form-select" onchange="loadMenu()">
+                            <option value="">-- Pilih Booth --</option>
+                            {% for booth in booths %}
+                            <option value="{{ booth.id }}">{{ booth.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="min-width:180px;">
+                        <label class="form-label" for="posPayment">Metode Pembayaran <span style="color:var(--danger);">*</span></label>
+                        <select name="payment" id="posPayment" class="form-select">
+                            <option value="tunai">Tunai</option>
+                            <option value="digital">Digital (QRIS/Transfer)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Grid Container -->
+            <div id="menuContainer">
+                <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+                    <i class="fas fa-store-alt" style="font-size:48px;color:var(--border);margin-bottom:16px;display:block;"></i>
+                    <div style="font-size:16px;font-weight:700;color:var(--fg);margin-bottom:4px;">Pilih Booth Terlebih Dahulu</div>
+                    <div style="font-size:13px;">Menu akan tampil otomatis setelah booth dipilih</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KOLOM KANAN: Keranjang / Struk -->
+        <div style="position:sticky;top:80px;">
+            <div class="card" style="border-top:3px solid var(--accent);">
+                <div class="card-header" style="background:var(--accent-light);">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-receipt" style="color:var(--accent);"></i>
+                        <span style="color:var(--accent);">Keranjang Pesanan</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="clearCart()" style="font-size:11px;">
+                        <i class="fas fa-trash-alt"></i> Kosongkan
+                    </button>
+                </div>
+                
+                <!-- Cart Items -->
+                <div id="cartItems" style="padding:16px 20px;max-height:400px;overflow-y:auto;min-height:150px;">
+                    <div id="emptyCartMsg" style="text-align:center;padding:30px 0;color:var(--muted);">
+                        <i class="fas fa-shopping-basket" style="font-size:28px;margin-bottom:8px;display:block;color:var(--border);"></i>
+                        <div style="font-size:13px;font-weight:600;">Belum ada item dipilih</div>
+                        <div style="font-size:11px;">Klik + pada menu untuk menambahkan</div>
+                    </div>
+                </div>
+
+                <!-- Summary & Submit -->
+                <div style="padding:16px 20px;border-top:1px solid var(--border);background:#FAFAF9;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--muted);">
+                        <span>Subtotal (<span id="totalQty">0</span> item)</span>
+                        <span id="subtotalDisplay">Rp 0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:16px;font-size:22px;font-weight:900;color:var(--accent);">
+                        <span>TOTAL</span>
+                        <span id="totalDisplay">Rp 0</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;border-radius:10px;" id="submitBtn" disabled>
+                        <i class="fas fa-check-circle"></i> Simpan Penjualan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let menuData = [];
+let cart = {};
+
+async function loadMenu() {
+    const boothId = document.getElementById('posBooth').value;
+    const container = document.getElementById('menuContainer');
+    cart = {};
+    updateCartUI();
+
+    if (!boothId) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+                <i class="fas fa-store-alt" style="font-size:48px;color:var(--border);margin-bottom:16px;display:block;"></i>
+                <div style="font-size:16px;font-weight:700;color:var(--fg);margin-bottom:4px;">Pilih Booth Terlebih Dahulu</div>
+                <div style="font-size:13px;">Menu akan tampil otomatis setelah booth dipilih</div>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = `<div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--accent);"></i><div style="margin-top:8px;font-size:13px;color:var(--muted);">Memuat menu...</div></div>`;
+
+    try {
+        const response = await fetch(`/menu/booth/${boothId}/`);
+        menuData = await response.json();
+        
+        if (menuData.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:40px;color:var(--muted);">
+                    <i class="fas fa-utensils" style="font-size:32px;color:var(--border);margin-bottom:12px;display:block;"></i>
+                    <div style="font-weight:700;color:var(--fg);">Booth ini belum memiliki menu</div>
+                    <div style="font-size:13px;">Tambahkan menu terlebih dahulu</div>
+                </div>`;
+            return;
+        }
+
+        renderMenu();
+    } catch (e) {
+        container.innerHTML = `<div style="padding:20px;color:var(--danger);text-align:center;">Gagal memuat menu. Coba lagi.</div>`;
+    }
+}
+
+function renderMenu() {
+    const container = document.getElementById('menuContainer');
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">';
+    
+    menuData.forEach(menu => {
+        const qty = cart[menu.id] ? cart[menu.id].qty : 0;
+        html += `
+        <div class="card" style="overflow:visible;">
+            <div style="padding:16px;">
+                <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${menu.name}</div>
+                <div style="font-size:18px;font-weight:900;color:var(--accent);margin-bottom:12px;">Rp ${menu.price.toLocaleString('id-ID')}</div>
+                
+                <!-- Quantity Stepper -->
+                <div style="display:flex;align-items:center;justify-content:space-between;background:#FAFAF9;border-radius:8px;padding:4px;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="changeQty(${menu.id}, -1)" style="width:34px;height:34px;padding:0;font-size:16px;font-weight:800;">-</button>
+                    <input type="number" id="qty_${menu.id}" name="qty_${menu.id}" value="${qty}" min="0" 
+                           style="width:50px;text-align:center;border:none;background:transparent;font-size:16px;font-weight:700;font-family:inherit;outline:none;"
+                           oninput="setQty(${menu.id}, this.value)" data-price="${menu.price}" data-name="${menu.name}">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="changeQty(${menu.id}, 1)" style="width:34px;height:34px;padding:0;font-size:16px;font-weight:800;">+</button>
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function changeQty(menuId, delta) {
+    const input = document.getElementById(`qty_${menuId}`);
+    if (!input) return;
+    let newQty = (parseInt(input.value) || 0) + delta;
+    if (newQty < 0) newQty = 0;
+    input.value = newQty;
+    updateCartItem(menuId, newQty);
+}
+
+function setQty(menuId, value) {
+    let qty = parseInt(value) || 0;
+    if (qty < 0) qty = 0;
+    updateCartItem(menuId, qty);
+}
+
+function updateCartItem(menuId, qty) {
+    const input = document.getElementById(`qty_${menuId}`);
+    const price = parseInt(input.dataset.price);
+    const name = input.dataset.name;
+
+    if (qty > 0) {
+        cart[menuId] = { name, price, qty, subtotal: qty * price };
+    } else {
+        delete cart[menuId];
+    }
+    updateCartUI();
+}
+
+function clearCart() {
+    cart = {};
+    // Reset semua input ke 0
+    document.querySelectorAll('[id^="qty_"]').forEach(input => input.value = 0);
+    updateCartUI();
+}
+
+function updateCartUI() {
+    const cartContainer = document.getElementById('cartItems');
+    const emptyMsg = document.getElementById('emptyCartMsg');
+    const totalQtyEl = document.getElementById('totalQty');
+    const subtotalEl = document.getElementById('subtotalDisplay');
+    const totalEl = document.getElementById('totalDisplay');
+    const submitBtn = document.getElementById('submitBtn');
+
+    const cartEntries = Object.values(cart);
+    const totalQty = cartEntries.reduce((sum, item) => sum + item.qty, 0);
+    const totalPrice = cartEntries.reduce((sum, item) => sum + item.subtotal, 0);
+
+    totalQtyEl.textContent = totalQty;
+    subtotalEl.textContent = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+    totalEl.textContent = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+
+    submitBtn.disabled = cartEntries.length === 0;
+
+    // Render cart items list
+    if (cartEntries.length === 0) {
+        cartContainer.innerHTML = `
+            <div id="emptyCartMsg" style="text-align:center;padding:30px 0;color:var(--muted);">
+                <i class="fas fa-shopping-basket" style="font-size:28px;margin-bottom:8px;display:block;color:var(--border);"></i>
+                <div style="font-size:13px;font-weight:600;">Belum ada item dipilih</div>
+                <div style="font-size:11px;">Klik + pada menu untuk menambahkan</div>
+            </div>`;
+        return;
+    }
+
+    let html = '';
+    cartEntries.forEach(item => {
+        html += `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:700;font-size:14px;">${item.name}</div>
+                <div style="font-size:11px;color:var(--muted);">Rp ${item.price.toLocaleString('id-ID')} x ${item.qty}</div>
+            </div>
+            <div style="font-weight:800;font-size:14px;color:var(--fg);margin-left:12px;">Rp ${item.subtotal.toLocaleString('id-ID')}</div>
+        </div>`;
+    });
+    
+    cartContainer.innerHTML = html;
+}
+
+// Initialize if booth is somehow pre-selected (rare in this flow, but safe)
+document.addEventListener('DOMContentLoaded', function() {
+    loadMenu(); 
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — BoothHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #1C1917; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .form-input { width: 100%; padding: 12px 14px; border: 1px solid #E7E5E4; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: #E36414; box-shadow: 0 0 0 3px rgba(227,100,20,0.15); }
+        .btn-primary { width:100%;padding:12px;border-radius:10px;font-size:15px;font-weight:700;border:none;cursor:pointer;background:#E36414;color:white;font-family:inherit;transition:background 0.2s; }
+        .btn-primary:hover { background: #C8530F; }
+    </style>
+</head>
+<body>
+    <div style="width:100%;max-width:400px;padding:20px;">
+        <div style="text-align:center;margin-bottom:32px;">
+            <div style="width:56px;height:56px;background:#E36414;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                <i class="fas fa-store" style="color:white;font-size:24px;"></i>
+            </div>
+            <h1 style="color:#F5F5F4;font-size:28px;font-weight:900;">BoothHub</h1>
+            <p style="color:#78716C;font-size:14px;">Sistem Manajemen Booth F&B</p>
+        </div>
+        <div style="background:white;border-radius:16px;padding:32px;">
+            {% if form.errors %}
+            <div style="padding:10px 14px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:13px;margin-bottom:16px;">
+                <i class="fas fa-exclamation-circle"></i> Username atau password salah
+            </div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#44403C;">Username</label>
+                    <input type="text" name="username" class="form-input" placeholder="Masukkan username" autofocus>
+                </div>
+                <div style="margin-bottom:24px;">
+                    <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#44403C;">Password</label>
+                    <input type="password" name="password" class="form-input" placeholder="Masukkan password">
+                </div>
+                <button type="submit" class="btn-primary">Masuk</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

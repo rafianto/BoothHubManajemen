@@ -1,0 +1,184 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_booth %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Isi data booth dengan lengkap{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+    <!-- Back Button -->
+    <a href="{% url 'boothapp:booth_list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;transition:color 0.2s;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+        <i class="fas fa-arrow-left"></i> Kembali ke Daftar Booth
+    </a>
+
+    <!-- Form Card -->
+    <div class="card">
+        <div class="card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-store-alt" style="color:var(--accent);font-size:15px;"></i>
+                </div>
+                <span>{{ title }}</span>
+            </div>
+        </div>
+        <div style="padding:24px;">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Error Messages -->
+                {% if form.errors %}
+                <div style="padding:12px 16px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:13px;margin-bottom:20px;">
+                    <i class="fas fa-exclamation-circle"></i> Terdapat kesalahan dalam formulir. Periksa kembali isian Anda.
+                </div>
+                {% endif %}
+
+                <!-- Nama Booth -->
+                <div class="form-group">
+                    <label class="form-label" for="id_name">
+                        Nama Booth <span style="color:var(--danger);">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;">Contoh: Fresh Drink Booth 1</div>
+                </div>
+
+                <!-- Lokasi -->
+                <div class="form-group">
+                    <label class="form-label" for="id_location">
+                        Lokasi <span style="color:var(--danger);">*</span>
+                    </label>
+                    {{ form.location }}
+                    {% if form.location.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.location.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;">Contoh: Mall Central Atrium</div>
+                </div>
+
+                <!-- Tipe & Ikon (2 kolom) -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="id_booth_type">
+                            Tipe Booth <span style="color:var(--danger);">*</span>
+                        </label>
+                        {{ form.booth_type }}
+                        {% if form.booth_type.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                            {% for error in form.booth_type.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="id_icon">
+                            Ikon
+                        </label>
+                        {{ form.icon }}
+                        {% if form.icon.errors %}
+                        <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                            {% for error in form.icon.errors %}{{ error }}{% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="form-group">
+                    <label class="form-label" for="id_status">Status</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                    <div style="color:var(--danger);font-size:12px;margin-top:4px;">
+                        {% for error in form.status.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Preview Ikon (Live) -->
+                <div style="padding:16px;background:#FAFAF9;border-radius:10px;border:1px solid var(--border);margin-bottom:20px;text-align:center;">
+                    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Preview</div>
+                    <div id="iconPreview" style="width:64px;height:64px;border-radius:16px;background:var(--accent-light);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;">
+                        <i id="iconPreviewI" class="fas fa-mug-hot" style="color:var(--accent);font-size:28px;"></i>
+                    </div>
+                    <div id="namePreview" style="font-weight:800;font-size:16px;">Nama Booth</div>
+                    <div id="locationPreview" style="font-size:12px;color:var(--muted);">Lokasi Booth</div>
+                    <div style="margin-top:8px;">
+                        <span id="typePreview" class="badge badge-info" style="display:none;"></span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--border);">
+                    <a href="{% url 'boothapp:booth_list' %}" class="btn btn-secondary" style="text-decoration:none;">Batal</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Live preview saat mengetik
+    const nameInput = document.getElementById('id_name');
+    const locationInput = document.getElementById('id_location');
+    const typeSelect = document.getElementById('id_booth_type');
+    const iconSelect = document.getElementById('id_icon');
+
+    const typeLabels = {
+        'minuman': 'Minuman',
+        'makanan': 'Makanan',
+        'campuran': 'Campuran'
+    };
+
+    function updatePreview() {
+        // Nama
+        const name = nameInput.value.trim();
+        document.getElementById('namePreview').textContent = name || 'Nama Booth';
+
+        // Lokasi
+        const loc = locationInput.value.trim();
+        document.getElementById('locationPreview').textContent = loc || 'Lokasi Booth';
+
+        // Tipe
+        const type = typeSelect.value;
+        const typeBadge = document.getElementById('typePreview');
+        if (type) {
+            typeBadge.textContent = typeLabels[type] || type;
+            typeBadge.style.display = 'inline-block';
+        } else {
+            typeBadge.style.display = 'none';
+        }
+
+        // Ikon
+        const icon = iconSelect.value;
+        document.getElementById('iconPreviewI').className = 'fas ' + icon;
+    }
+
+    nameInput.addEventListener('input', updatePreview);
+    locationInput.addEventListener('input', updatePreview);
+    typeSelect.addEventListener('change', updatePreview);
+    iconSelect.addEventListener('change', updatePreview);
+
+    // Jalankan saat halaman load
+    updatePreview();
+
+    // Styling form fields yang di-render Django
+    document.querySelectorAll('.form-input, .form-select, input[type="text"], input[type="number"], select, textarea').forEach(el => {
+        if (!el.classList.contains('form-input') && !el.classList.contains('form-select')) {
+            el.classList.add('form-input');
+        }
+        // Tambah error styling jika ada error
+        if (el.closest('.form-group')?.querySelector('[style*="color:var(--danger)"]')) {
+            el.style.borderColor = 'var(--danger)';
+        }
+    });
+</script>
+{% endblock %}

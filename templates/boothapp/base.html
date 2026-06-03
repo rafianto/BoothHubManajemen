@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BoothHub{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #F8F6F3;
+            --fg: #1C1917;
+            --muted: #78716C;
+            --accent: #E36414;
+            --accent-light: #FFF0E6;
+            --card: #FFFFFF;
+            --border: #E7E5E4;
+            --sidebar: #1C1917;
+            --sidebar-hover: #292524;
+            --success: #16A34A;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --info: #0891B2;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D6D3D1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #A8A29E; }
+
+        .sidebar { width: 260px; min-height: 100vh; background: var(--sidebar); position: fixed; left: 0; top: 0; z-index: 50; transition: transform 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar-brand { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #A8A29E; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-nav a:hover { background: var(--sidebar-hover); color: #F5F5F4; }
+        .sidebar-nav a.active { background: var(--sidebar-hover); color: var(--accent); border-left-color: var(--accent); }
+        .sidebar-nav a i { width: 20px; text-align: center; font-size: 15px; }
+        .sidebar-section { padding: 16px 20px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #57534E; font-weight: 700; }
+
+        .main-content { margin-left: 260px; min-height: 100vh; }
+        .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: space-between; }
+
+        .kpi-card { padding: 20px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); position: relative; overflow: hidden; }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+        .kpi-card.orange::before { background: var(--accent); }
+        .kpi-card.green::before { background: var(--success); }
+        .kpi-card.cyan::before { background: var(--info); }
+        .kpi-card.red::before { background: var(--danger); }
+        .kpi-value { font-size: 28px; font-weight: 900; margin: 8px 0 4px; }
+        .kpi-label { font-size: 13px; color: var(--muted); font-weight: 500; }
+        .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; background: #FAFAF9; border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+        .data-table tr:hover td { background: #FAFAF9; }
+
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge-success { background: #DCFCE7; color: #166534; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
+        .badge-info { background: #CFFAFE; color: #155E75; }
+        .badge-muted { background: #F5F5F4; color: #57534E; }
+
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; text-decoration: none; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #C8530F; }
+        .btn-secondary { background: #F5F5F4; color: var(--fg); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #E7E5E4; }
+        .btn-danger { background: #FEE2E2; color: #DC2626; }
+        .btn-danger:hover { background: #FECACA; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #44403C; }
+        .form-input, .form-select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.2s; outline: none; }
+        .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(227,100,20,0.1); }
+
+        .alert-strip { padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .alert-strip.danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+        .alert-strip.warning { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+
+        .stock-bar { width: 100%; height: 6px; background: #E7E5E4; border-radius: 3px; overflow: hidden; }
+        .stock-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+        .page-enter { animation: fadeUp 0.3s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media(max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-store" style="color:white;font-size:16px;"></i>
+                </div>
+                <div>
+                    <div style="color:#F5F5F4;font-weight:800;font-size:18px;">BoothHub</div>
+                    <div style="color:#78716C;font-size:11px;font-weight:500;">Manajemen Booth F&B</div>
+                </div>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">Utama</div>
+            <a href="{% url 'boothapp:dashboard' %}" class="{% block nav_dashboard %}{% endblock %}"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <a href="{% url 'boothapp:booth_list' %}" class="{% block nav_booth %}{% endblock %}"><i class="fas fa-store-alt"></i> Booth</a>
+            
+            <div class="sidebar-section">Operasional</div>
+            <a href="{% url 'boothapp:employee_list' %}" class="{% block nav_karyawan %}{% endblock %}"><i class="fas fa-users"></i> Karyawan</a>
+            <a href="{% url 'boothapp:inventory_list' %}" class="{% block nav_stok %}{% endblock %}"><i class="fas fa-boxes-stacked"></i> Stok Bahan</a>
+            <a href="{% url 'boothapp:menu_list' %}" class="{% block nav_menu %}{% endblock %}"><i class="fas fa-utensils"></i> Menu</a>
+            <a href="{% url 'boothapp:sale_list' %}" class="{% block nav_penjualan %}{% endblock %}"><i class="fas fa-cash-register"></i> Penjualan</a>
+            <a href="{% url 'boothapp:expense_list' %}" class="{% block nav_biaya %}{% endblock %}"><i class="fas fa-money-bill-wave"></i> Biaya Operasional</a>
+            
+                       <div class="sidebar-section">Laporan</div>
+            <a href="{% url 'boothapp:report' %}" class="{% block nav_laporan %}{% endblock %}"><i class="fas fa-chart-bar"></i> Laporan & Analitik</a>
+            <a href="{% url 'boothapp:cashflow_report' %}" class="{% block nav_cashflow %}{% endblock %}"><i class="fas fa-money-bill-trend-up"></i> Arus Kas (Cashflow)</a> 
+        </nav>
+        <div style="padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#292524;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-user" style="color:#A8A29E;font-size:14px;"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="color:#F5F5F4;font-size:13px;font-weight:600;">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div style="color:#78716C;font-size:11px;">Pemilik Usaha</div>
+                </div>
+                <a href="{% url 'logout' %}" style="color:#78716C;font-size:14px;" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button id="menuToggle" class="btn-icon btn-secondary" style="display:none;"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h1 id="pageTitle" style="font-size:20px;font-weight:800;">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p id="pageSubtitle" style="font-size:12px;color:var(--muted);font-weight:500;">{% block page_subtitle %}{% endblock %}</p>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="font-size:13px;color:var(--muted);font-weight:500;">{% now "l, d F Y" %}</div>
+            </div>
+        </div>
+        <div style="padding:24px 32px;" class="page-enter">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        // Mobile sidebar toggle
+        const toggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        
+        function checkWidth() {
+            if (window.innerWidth <= 1024) {
+                toggle.style.display = 'flex';
+            } else {
+                toggle.style.display = 'none';
+                sidebar.classList.remove('open');
+            }
+        }
+        
+        toggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+        window.addEventListener('resize', checkWidth);
+        checkWidth();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,102 @@
+{% extends 'boothapp/base.html' %}
+
+{% block nav_biaya %}active{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Isi data pengeluaran operasional{% endblock %}
+
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+    <a href="{% url 'boothapp:expense_list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:20px;"
+       onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+        <i class="fas fa-arrow-left"></i> Kembali ke Daftar Biaya
+    </a>
+
+    <div class="card">
+        <div class="card-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:8px;background:#FEE2E2;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-money-bill-wave" style="color:var(--danger);font-size:15px;"></i>
+                </div>
+                <span>{{ title }}</span>
+            </div>
+        </div>
+        <div style="padding:24px;">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.errors %}
+                <div style="padding:12px 16px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:13px;margin-bottom:20px;">
+                    <i class="fas fa-exclamation-circle"></i> Terdapat kesalahan dalam formulir.
+                </div>
+                {% endif %}
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Booth <span style="color:var(--danger);">*</span></label>
+                        {{ form.booth }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kategori <span style="color:var(--danger);">*</span></label>
+                        {{ form.category }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Deskripsi <span style="color:var(--danger);">*</span></label>
+                    {{ form.description }}
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Jumlah Biaya (Rp) <span style="color:var(--danger);">*</span></label>
+                        <div style="position:relative;">
+                            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700;font-size:14px;">Rp</span>
+                            {{ form.amount }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal <span style="color:var(--danger);">*</span></label>
+                        {{ form.date }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tipe Biaya</label>
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:#FAFAF9;border-radius:8px;border:1px solid var(--border);">
+                        {{ form.is_recurring }}
+                        <label for="id_is_recurring" style="font-size:14px;font-weight:500;cursor:pointer;">
+                            Ini adalah biaya berulang setiap bulan (contoh: sewa, gaji)
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display:flex;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid var(--border);">
+                    <a href="{% url 'boothapp:expense_list' %}" class="btn btn-secondary" style="text-decoration:none;">Batal</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Styling Django form fields
+    document.querySelectorAll('input[type="text"], input[type="number"], select, textarea').forEach(el => {
+        if (!el.classList.contains('form-input') && !el.classList.contains('form-select')) {
+            el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-input');
+        }
+    });
+    const amountInput = document.getElementById('id_amount');
+    if (amountInput) amountInput.style.paddingLeft = '36px';
+    const checkbox = document.getElementById('id_is_recurring');
+    if (checkbox) { checkbox.style.width = '18px'; checkbox.style.height = '18px'; checkbox.style.accentColor = 'var(--accent)'; checkbox.style.cursor = 'pointer'; }
+    
+    // Set default date to today if empty
+    const dateInput = document.getElementById('id_date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+</script>
+{% endblock %}
